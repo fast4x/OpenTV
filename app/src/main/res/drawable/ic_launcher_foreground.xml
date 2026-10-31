@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icona launcher OpenTV: televisione + pulsante play -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Antenne -->
+    <path
+        android:pathData="M44,38 L38,26"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M64,38 L70,26"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+
+    <!-- Schermo del televisore -->
+    <path
+        android:pathData="M36,38 H72 A8,8 0 0 1 80,46 V66 A8,8 0 0 1 72,74 H36 A8,8 0 0 1 28,66 V46 A8,8 0 0 1 36,38 Z"
+        android:fillColor="#33FFFFFF" />
+
+    <!-- Pulsante play -->
+    <path
+        android:pathData="M50,47 L66,56 L50,65 Z"
+        android:fillColor="#FFFFFF" />
+</vector>

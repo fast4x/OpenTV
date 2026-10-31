@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Comandi di riproduzione dalla notifica (media session, feature 9):
+         senza il permesso la notifica non appare su Android 13+, ma i comandi
+         da lockscreen/auricolari continuano a funzionare via sessione. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- L'app funziona su telefono (touch) e su Android TV (D-pad). -->
+    <uses-feature
+        android:name="android.software.leanback"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+
+    <application
+        android:name="it.fast4x.opentv.OpenTvApplication"
+        android:allowBackup="true"
+        android:banner="@drawable/tv_banner"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
+        android:theme="@style/Theme.OpenTV">
+
+        <activity
+            android:name="it.fast4x.opentv.MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode"
+            android:theme="@style/Theme.OpenTV">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <!-- Avviabile anche dal launcher di Android TV -->
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Comandi dei pulsanti della notifica di riproduzione (feature 9):
+             esportato = false, riceve solo i PendingIntents espliciti creati
+             da PlaybackMediaBridge nella stessa app. -->
+        <receiver
+            android:name="it.fast4x.opentv.media.PlaybackCommandReceiver"
+            android:exported="false" />
+    </application>
+
+</manifest>

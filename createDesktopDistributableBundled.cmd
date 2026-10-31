@@ -1,0 +1,1 @@
+.\gradlew.bat :desktop:packageDistributionForCurrentOS -Popentv.bundleVlc=true

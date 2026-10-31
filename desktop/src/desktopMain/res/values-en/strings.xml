@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="greeting_welcome">Welcome to OpenTV Desktop</string>
+    <string name="tv_player_title">Live TV Stream</string>
+    <string name="settings_user_name">User Name</string>
+    <string name="button_save">Save Settings</string>
+    <string name="label_current_language">Current Language</string>
+</resources>

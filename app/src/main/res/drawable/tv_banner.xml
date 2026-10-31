@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Banner per il launcher di Android TV (320x180 dp) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+
+    <!-- Sfondo -->
+    <path
+        android:pathData="M0,0 H320 V180 H0 Z"
+        android:fillColor="@color/tv_banner_background" />
+
+    <!-- Antenne -->
+    <path
+        android:pathData="M138,58 L126,36"
+        android:strokeColor="#4D9FFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M182,58 L194,36"
+        android:strokeColor="#4D9FFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round" />
+
+    <!-- Schermo -->
+    <path
+        android:pathData="M118,58 H202 A9,9 0 0 1 211,67 V113 A9,9 0 0 1 202,122 H118 A9,9 0 0 1 109,113 V67 A9,9 0 0 1 118,58 Z"
+        android:fillColor="#1D2736"
+        android:strokeColor="#4D9FFF"
+        android:strokeWidth="3" />
+
+    <!-- Play -->
+    <path
+        android:pathData="M148,76 L184,90 L148,104 Z"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Accenti decorativi -->
+    <path
+        android:pathData="M262,138 m-7,0 a7,7 0 1 1 14,0 a7,7 0 1 1 -14,0"
+        android:fillColor="#4D9FFF" />
+    <path
+        android:pathData="M282,138 m-5,0 a5,5 0 1 1 10,0 a5,5 0 1 1 -10,0"
+        android:fillColor="#35D0A5" />
+    <path
+        android:pathData="M296,138 m-3.5,0 a3.5,3.5 0 1 1 7,0 a3.5,3.5 0 1 1 -7,0"
+        android:fillColor="#93A0B4" />
+</vector>

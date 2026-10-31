@@ -1,0 +1,8 @@
+/.idea/
+/.kotlin/
+/.gradle/
+/app/build/
+/app/release/
+/build/
+/core/build/
+/desktop/build/

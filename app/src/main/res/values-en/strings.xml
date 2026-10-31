@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenTV</string>
+
+    <!-- Home -->
+    <string name="home_subtitle">Italian IPTV</string>
+    <string name="section_recents">Recently watched</string>
+    <string name="section_favorites">Favorites</string>
+    <string name="section_favorites_profile">Favorites · %1$s</string>
+    <string name="section_all">All channels</string>
+    <string name="search_hint">Search channel…</string>
+    <string name="content_desc_search">Search</string>
+    <string name="content_desc_settings">Settings</string>
+    <string name="content_desc_refresh">Refresh</string>
+    <string name="content_desc_favorite">Favorite</string>
+    <string name="content_desc_back">Back</string>
+    <string name="loading_channels">Loading channels…</string>
+    <string name="error_load_channels">Could not load channels</string>
+    <string name="retry">Retry</string>
+    <string name="offline_cache">Offline: channels shown from cache</string>
+    <string name="no_results">No channel found for “%1$s”</string>
+    <string name="no_channels_yet">No channel available yet. Check your connection or the playlist URL in settings.</string>
+    <!-- Home: group (genre) filter -->
+    <string name="group_all">All</string>
+    <string name="group_uncategorized">Uncategorized</string>
+    <string name="group_count">%1$d channels</string>
+    <string name="group_badge_filter">Filter channels of this genre</string>
+    <string name="favorites_only">Favorites</string>
+    <string name="guide_only">Guide only</string>
+    <string name="favorites_empty">No favorites yet: tap the star on a channel to add it</string>
+
+    <!-- TV guide (feature 8) -->
+    <string name="guide_title">TV guide</string>
+    <string name="content_desc_guide">TV guide</string>
+    <string name="guide_empty">The TV guide has no programmes for the loaded channels.\nCheck the EPG source in the settings (per-country guide or manual URL).</string>
+
+
+    <!-- Player -->
+    <string name="player_buffering">Connecting to channel…</string>
+    <string name="player_reconnecting">Reconnecting to channel… (%1$d of %2$d)</string>
+    <string name="player_error">Playback error</string>
+    <string name="player_channel_not_found">Channel not found</string>
+    <string name="player_prev">Previous channel</string>
+    <string name="player_next">Next channel</string>
+    <string name="player_play_pause">Play / Pause</string>
+    <!-- Playback notification (feature 9) -->
+    <string name="notification_live">Live</string>
+    <string name="notification_channel_name">Playback</string>
+    <string name="epg_now">Now on air</string>
+    <string name="epg_next">Up next</string>
+    <string name="epg_remaining">%1$d min left</string>
+    <string name="epg_schedule">Schedule</string>
+    <string name="epg_schedule_empty">No programmes in the guide for this channel</string>
+    <string name="epg_today">Today</string>
+    <string name="epg_tomorrow">Tomorrow</string>
+    <string name="epg_badge_now">On air</string>
+    <string name="player_resize">Video aspect</string>
+    <string name="player_resize_fit">Fit</string>
+    <string name="player_resize_fill">Stretch</string>
+    <string name="player_resize_zoom">Zoom</string>
+    <string name="player_sleep_timer">Sleep timer</string>
+    <string name="sleep_off">Off</string>
+    <string name="sleep_until">Playback stops at %1$s</string>
+    <string name="sleep_minutes">%1$d min</string>
+
+    <!-- Player: selezione traccia audio (canali multilingua) -->
+    <string name="player_audio_tracks">Audio tracks</string>
+    <string name="player_audio_auto">Automatic</string>
+    <string name="player_audio_none">No selectable audio tracks on this channel</string>
+    <string name="player_audio_track_n">Track %1$d</string>
+    <string name="player_audio_channels">%1$d channels</string>
+    <string name="player_audio_ad">Audio description</string>
+
+    <!-- Player: selezione sottotitoli (gemello del menu audio) -->
+    <string name="player_subtitles_tracks">Subtitles</string>
+    <string name="player_subtitles_off">Off</string>
+    <string name="player_subtitles_none">No subtitles on this channel</string>
+
+    <!-- Reminder programma ("avvisami quando inizia") -->
+    <string name="reminder_add">Notify me when it starts</string>
+    <string name="reminder_remove">Remove reminder</string>
+    <string name="reminder_channel_name">Programme reminders</string>
+    <string name="reminder_notif_now">Starting now (%1$s): %2$s</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_playlist_label">Playlist URL (M3U)</string>
+    <string name="settings_playlist_hint">Automatic (device country)</string>
+    <string name="settings_epg_label">XMLTV guide URL (optional)</string>
+    <string name="settings_epg_hint">https://example.com/guide.xml.gz</string>
+    <string name="settings_save">Save and refresh</string>
+    <string name="settings_reset">Restore default</string>
+    <string name="settings_channels_loaded">Channels loaded: %1$d</string>
+    <string name="settings_playlist_auto_hint">Leave empty for automatic: the iptv-org playlist of the country chosen in the selector is loaded (or of the device country if none was chosen). A custom URL pasted here always takes precedence.</string>
+    <string name="settings_epg_auto_hint">Leave empty for the automatic guide: the iptv-epg.org country guide is loaded based on the iptv-org playlist (same channel ids, one download for the whole list).</string>
+    <string name="country_auto">Automatic (device country)</string>
+    <string name="settings_country_quick_title">Channel list country</string>
+    <string name="settings_country_desc">Pick the channel list country: the choice applies immediately and loads the iptv-org list for that country, with the TV guide of the same country. «Automatic» uses the device country. The selection matches the Home screen and never fills the URL field, which stays for personal lists.</string>
+<string name="settings_epg_status_none">TV guide not active (paste an XMLTV URL or use an iptv-org playlist)</string>
+    <string name="settings_epg_status_loading">Loading TV guide…</string>
+    <string name="settings_epg_status_ready">TV guide active: %1$d programmes in memory</string>
+    <string name="settings_epg_status_error">TV guide error: %1$s</string>
+    <string name="settings_saved">Settings saved, refreshing playlist…</string>
+    <string name="settings_reset_playlist">Playlist restored: automatic mode (device country)</string>
+
+    <!-- Settings: playback engine -->
+    <string name="settings_engine_title">Playback engine</string>
+    <string name="settings_engine_exo">ExoPlayer</string>
+
+    <!-- Settings: export/import playlist -->
+    <string name="settings_backup_title">Export &amp; import list</string>
+    <string name="settings_backup_desc">Export the loaded list to an M3U file (backup or sharing) or import it from a local file (.m3u / .m3u8, or an OpenTV profile bundle .opentv with profile + channels). The imported list takes priority over the URL until you press “Save” or “Restore default”.</string>
+    <string name="settings_export">Export list</string>
+    <string name="settings_import">Import from file</string>
+    <string name="settings_export_ok">List exported: %1$d channels</string>
+    <string name="settings_import_ok">List imported: %1$d channels (source: local file)</string>
+    <string name="settings_export_profile">Export profile…</string>
+    <string name="settings_profile_export_ok">Profile exported: %1$d channels</string>
+    <string name="settings_profile_import_ok">Profile “%1$s” imported: %2$d channels</string>
+    <string name="settings_profile_invalid">Invalid OpenTV profile file</string>
+    <string name="settings_profile_exists_title">Profile already exists</string>
+    <string name="settings_profile_exists_msg">A profile named “%1$s” already exists. Overwrite it with the one from the file (%2$d channels)? The profile will be activated and its channels loaded.</string>
+    <string name="settings_profile_overwrite">Overwrite</string>
+    <string name="settings_profile_no_playlist">The profile does not declare a playlist URL</string>
+    <string name="settings_no_channels">No channels to export: load a playlist first</string>
+    <string name="settings_file_error">Unable to read or write the selected file</string>
+    <string name="settings_no_filemanager">No file manager available on this device</string>
+
+    <!-- Network errors -->
+    <string name="error_network">Network unreachable. Check your connection and retry.</string>
+    <string name="error_http">Server returned an error (HTTP %1$d)</string>
+    <string name="error_ssl">Secure connection failed: check the device date and time, or your network (DNS/filter) blocking the source.</string>
+    <string name="error_empty_playlist">The playlist is empty or contains no valid channels</string>
+    <!-- Profili di sorgente (feature "profilazione della lista") -->
+    <string name="profiles_manage">Manage profiles…</string>
+    <string name="profiles_title">Source profiles</string>
+    <string name="profiles_desc">Save your own playlist+guide pairs and switch them from the source menu in Home. With a profile active, the automatic iptv-org source (URL fields and country above) is bypassed; you can always come back.</string>
+    <string name="profiles_empty">No profiles yet: create one below with a name and a playlist URL.</string>
+    <string name="profiles_active">Active</string>
+    <string name="profiles_use">Use</string>
+    <string name="profiles_edit">Edit</string>
+    <string name="profiles_delete">Delete</string>
+    <string name="profiles_removed">Profile removed.</string>
+    <string name="profiles_name_hint">Profile name (e.g. Home list)</string>
+    <string name="profiles_playlist_hint">M3U playlist URL</string>
+    <string name="profiles_epg_hint">XMLTV guide URL (optional)</string>
+    <string name="profiles_add">Add profile</string>
+    <string name="profiles_save_edit">Save changes</string>
+    <string name="profiles_cancel">Cancel</string>
+    <string name="profiles_added">Profile added.</string>
+    <string name="profiles_updated">Profile updated.</string>
+    <string name="profiles_need_fields">Name and playlist URL are required.</string>
+    <string name="profiles_epg_line">Guide: %1$s</string>
+    <string name="profiles_saved">Saved profiles</string>
+    <string name="profiles_form_new">New profile</string>
+    <string name="profiles_form_edit">Edit profile</string>
+    <string name="profiles_line_list">List</string>
+    <string name="profiles_line_guide">Guide</string>
+    <string name="profiles_guide_auto">Automatic from the playlist (iptv-org)</string>
+
+    <!-- Feature "nascondi canali": richiesta dalla card, conferma con dialog,
+         gestione/ripristino nelle Impostazioni per la sorgente attiva. -->
+    <string name="hide_channel_action">Hide channel</string>
+    <string name="hide_channel_title">Hide this channel?</string>
+    <string name="hide_channel_message">“%1$s” will disappear from every list (Home, search, groups, favourites, TV guide) of this source. The playlist stays untouched: you can restore it any time from Settings.</string>
+    <string name="hide_channel_confirm">Hide</string>
+    <string name="settings_hidden_title">Hidden channels</string>
+    <string name="settings_hidden_desc">Channels hidden from the current source. Restore them to bring them back to every list.</string>
+    <string name="settings_hidden_empty">No hidden channels: tap the eye icon on a channel card in the Home (or right-click on desktop) to hide one.</string>
+    <string name="settings_hidden_restore">Restore</string>
+    <string name="settings_hidden_restore_all">Restore all</string>
+    <string name="settings_hidden_restored">Channel restored.</string>
+    <string name="settings_hidden_restored_all">All hidden channels restored.</string>
+</resources>
