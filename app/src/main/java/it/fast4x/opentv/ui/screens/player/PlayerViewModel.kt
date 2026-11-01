@@ -26,7 +26,13 @@ import it.fast4x.opentv.data.model.PlaybackEngine
 import it.fast4x.opentv.data.model.PlaylistState
 import it.fast4x.opentv.data.model.Programme
 import it.fast4x.opentv.data.model.ProgrammeReminder
+import it.fast4x.opentv.data.repository.CatchupDay
+import it.fast4x.opentv.data.repository.CatchupProgramme
+import it.fast4x.opentv.data.repository.CatchupSession
+import it.fast4x.opentv.data.repository.CatchupStream
 import it.fast4x.opentv.data.repository.EpgRepository
+import it.fast4x.opentv.data.repository.La7Catchup
+import it.fast4x.opentv.data.repository.La7CatchupRepository
 import it.fast4x.opentv.data.repository.epgKey
 import it.fast4x.opentv.data.repository.PlaylistRepository
 import it.fast4x.opentv.data.remote.StreamProbe
@@ -128,6 +134,7 @@ class PlayerViewModel(
     private val playlistRepository: PlaylistRepository,
     private val prefs: UserPrefsStore,
     private val epgRepository: EpgRepository,
+    private val catchupRepository: La7CatchupRepository,
 ) : ViewModel() {
 
     private val _playback = MutableStateFlow<PlaybackStatus>(PlaybackStatus.Buffering)
@@ -222,6 +229,99 @@ class PlayerViewModel(
             emit(Unit)
             delay(EPG_TICK_MS)
         }
+    }
+
+    // -----------------------------------------------------------------
+    // Rivedi (catch-up TV La7 Play, feature "rivedi"): i canali La7 e
+    // La7 Cinema espongono le repliche degli ultimi 7 giorni. Il pulsante
+    // compare solo su quei canali ([La7Catchup.slugFor] sull'identità del
+    // canale, non sul selettore paese); la guida si scarica alla PRIMA
+    // apertura del pannello (zero costo se non usato) e resta in cache.
+    // -----------------------------------------------------------------
+
+    /** Sessione catch-up attiva (null = riproduzione live normale). */
+    private val _catchupSession = MutableStateFlow<CatchupSession?>(null)
+    val catchupSession: StateFlow<CatchupSession?> = _catchupSession.asStateFlow()
+
+    /** Giorni Rivedi del canale corrente (null = non ancora caricati). */
+    private val _catchupDays = MutableStateFlow<List<CatchupDay>?>(null)
+    val catchupDays: StateFlow<List<CatchupDay>?> = _catchupDays.asStateFlow()
+
+    /** Caricamento guida Rivedi in corso. */
+    private val _catchupLoading = MutableStateFlow(false)
+    val catchupLoading: StateFlow<Boolean> = _catchupLoading.asStateFlow()
+
+    /** Errore dell'ultima operazione Rivedi (guida o risoluzione replica). */
+    private val _catchupError = MutableStateFlow<String?>(null)
+    val catchupError: StateFlow<String?> = _catchupError.asStateFlow()
+
+    /** True se il canale corrente è coperto dal Rivedi (pulsante visibile). */
+    val catchupSupported: Boolean
+        get() = _currentChannel.value != null && La7Catchup.slugFor(_currentChannel.value!!) != null
+
+    /**
+     * Carica la guida Rivedi del canale corrente (idempotente: no-op se già
+     * in corso o già disponibile, a meno di [force] dal "Riprova").
+     */
+    fun loadCatchupSchedule(force: Boolean = false) {
+        val slug = _currentChannel.value?.let { La7Catchup.slugFor(it) } ?: return
+        if (_catchupLoading.value) return
+        if (!force && _catchupDays.value != null) return
+        viewModelScope.launch {
+            _catchupLoading.value = true
+            _catchupError.value = null
+            try {
+                _catchupDays.value = catchupRepository.schedule(slug)
+            } catch (error: Exception) {
+                _catchupDays.value = emptyList()
+                _catchupError.value = appContext.getString(R.string.catchup_error)
+            } finally {
+                _catchupLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Avvia la riproduzione catch-up di un programma del pannello: risolve
+     * lo stream on-demand dalla pagina puntata e passa il player alla
+     * replica. Il live resta invariato se la risoluzione fallisce (l'errore
+     * si vede nel pannello, non schermo pieno).
+     */
+    fun playCatchup(programme: CatchupProgramme) {
+        val channel = _currentChannel.value ?: return
+        val pathname = programme.pathname ?: return
+        viewModelScope.launch {
+            val stream: CatchupStream? = try {
+                catchupRepository.resolveStream(pathname)
+            } catch (error: Exception) {
+                null
+            }
+            if (stream == null) {
+                _catchupError.value = appContext.getString(R.string.catchup_unavailable)
+                return@launch
+            }
+            _catchupError.value = null
+            _catchupSession.value = CatchupSession(programme = programme, streamUrl = stream.url)
+            _playback.value = PlaybackStatus.Buffering
+            loadMedia(channel, progressiveFallback = false)
+        }
+    }
+
+    /** Abbandona la replica e torna al live del canale corrente. */
+    fun returnToLive() {
+        val channel = _currentChannel.value ?: return
+        if (_catchupSession.value == null) return
+        _catchupSession.value = null
+        _playback.value = PlaybackStatus.Buffering
+        if (_engine.value == Engine.EXO) loadMedia(channel, progressiveFallback = false)
+    }
+
+    /** Svuota lo stato Rivedi al cambio canale (zapping = uscita dal catch-up). */
+    private fun resetCatchupState() {
+        _catchupSession.value = null
+        _catchupDays.value = null
+        _catchupLoading.value = false
+        _catchupError.value = null
     }
 
     /** Coppia (in onda adesso, a seguire) per il canale corrente. */
@@ -372,7 +472,10 @@ class PlayerViewModel(
                 if (channel != null) {
                     bridge.update(
                         channelName = channel.name,
-                        programmeTitle = epgPair.first?.title,
+                        // Durante il catch-up la notifica mostra il programma
+                        // Rivedi, non il programma live della guida.
+                        programmeTitle = _catchupSession.value?.programme?.title
+                            ?: epgPair.first?.title,
                         isPlaying = status is PlaybackStatus.Playing,
                     )
                 }
@@ -418,10 +521,12 @@ class PlayerViewModel(
 
     fun playChannel(channel: Channel) {
         // Nuova sessione di canale: annulla qualunque riconnessione pendente
-        // (feature 7) e riparte con i contatori a zero.
+        // (feature 7) e riparte con i contatori a zero. Lo zapping esce dal
+        // catch-up: la replica appartiene al canale da cui è stata scelta.
         reconnectJob?.cancel()
         reconnectJob = null
         reconnectAttempts = 0
+        resetCatchupState()
         _currentChannel.value = channel
         progressiveFallbackTried = false
         _playback.value = PlaybackStatus.Buffering
@@ -460,6 +565,30 @@ class PlayerViewModel(
      */
     private fun loadMedia(channel: Channel, progressiveFallback: Boolean) {
         viewModelScope.launch {
+            // Rivedi attivo: il media è la replica on-demand già risolta, non
+            // l'URL live del canale. Niente relinker né intestazioni per-network:
+            // il CDN del catch-up risponde senza Referer e con lo User-Agent
+            // predefinito dell'app. La riconnessione automatica (feature 7)
+            // riparte da qui e riproduce di nuovo la replica, non il live.
+            _catchupSession.value?.let { session ->
+                val catchupMedia = MediaItem.Builder()
+                    .setUri(session.streamUrl)
+                    .setMimeType(StreamTypes.guessMimeType(session.streamUrl))
+                    .setMediaMetadata(
+                        MediaMetadata.Builder()
+                            .setTitle(session.programme.title)
+                            .setArtist(
+                                appContext.getString(R.string.catchup_notification, channel.name),
+                            )
+                            .build(),
+                    )
+                    .build()
+                player.setMediaItem(catchupMedia)
+                player.prepare()
+                player.playWhenReady = true
+                return@launch
+            }
+
             // Intestazioni richieste dalla playlist per questo canale (null = default).
             httpFactory.userAgent = channel.httpUserAgent
 //            val refererUrl =

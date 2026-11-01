@@ -9,7 +9,13 @@ import it.fast4x.opentv.data.model.SourceProfile
 import it.fast4x.opentv.data.model.channelGroupKeys
 import it.fast4x.opentv.data.model.channelGroups
 import it.fast4x.opentv.data.remote.StreamResolver
+import it.fast4x.opentv.data.repository.CatchupDay
+import it.fast4x.opentv.data.repository.CatchupProgramme
+import it.fast4x.opentv.data.repository.CatchupSession
+import it.fast4x.opentv.data.repository.CatchupStream
 import it.fast4x.opentv.data.repository.EpgRepository
+import it.fast4x.opentv.data.repository.La7Catchup
+import it.fast4x.opentv.data.repository.La7CatchupRepository
 import it.fast4x.opentv.data.repository.SourceResolver
 import it.fast4x.opentv.data.repository.epgKey
 import it.fast4x.opentv.data.repository.PlaylistRepository
@@ -569,6 +575,101 @@ class DesktopPlayerState(
         initialValue = emptySet(),
     )
 
+    // -----------------------------------------------------------------
+    // Rivedi (catch-up TV La7 Play, feature "rivedi"): gemello del ramo
+    // Android di PlayerViewModel. Il pulsante compare solo sui canali
+    // coperti ([La7Catchup.slugFor]); la guida si scarica alla prima
+    // apertura del pannello e resta in cache nel repository.
+    // -----------------------------------------------------------------
+
+    /** Sessione catch-up attiva (null = riproduzione live normale). */
+    private val _catchupSession = MutableStateFlow<CatchupSession?>(null)
+    val catchupSession: StateFlow<CatchupSession?> = _catchupSession.asStateFlow()
+
+    /** Giorni Rivedi del canale corrente (null = non ancora caricati). */
+    private val _catchupDays = MutableStateFlow<List<CatchupDay>?>(null)
+    val catchupDays: StateFlow<List<CatchupDay>?> = _catchupDays.asStateFlow()
+
+    /** Caricamento guida Rivedi in corso. */
+    private val _catchupLoading = MutableStateFlow(false)
+    val catchupLoading: StateFlow<Boolean> = _catchupLoading.asStateFlow()
+
+    /** Errore dell'ultima operazione Rivedi (guida o risoluzione replica). */
+    private val _catchupError = MutableStateFlow<String?>(null)
+    val catchupError: StateFlow<String?> = _catchupError.asStateFlow()
+
+    /** True se il canale corrente è coperto dal Rivedi (pulsante abilitato). */
+    val catchupSupported: Boolean
+        get() = _currentChannel.value != null && La7Catchup.slugFor(_currentChannel.value!!) != null
+
+    /**
+     * Carica la guida Rivedi del canale corrente (idempotente, come sul
+     * player Android; [force] arriva dal pulsante "Riprova").
+     */
+    fun loadCatchupSchedule(force: Boolean = false) {
+        val slug = _currentChannel.value?.let { La7Catchup.slugFor(it) } ?: return
+        if (_catchupLoading.value) return
+        if (!force && _catchupDays.value != null) return
+        scope.launch {
+            _catchupLoading.value = true
+            _catchupError.value = null
+            try {
+                _catchupDays.value = deps.catchupRepository.schedule(slug)
+            } catch (error: Exception) {
+                _catchupDays.value = emptyList()
+                _catchupError.value = CATCHUP_ERROR_MESSAGE
+            } finally {
+                _catchupLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Avvia la riproduzione catch-up di un programma del pannello: risolve
+     * lo stream on-demand e apre la replica su libVLC. Il live resta invariato
+     * se la risoluzione fallisce (l'errore si vede nel pannello).
+     */
+    fun playCatchup(programme: CatchupProgramme) {
+        val pathname = programme.pathname ?: return
+        scope.launch {
+            val stream: CatchupStream? = try {
+                deps.catchupRepository.resolveStream(pathname)
+            } catch (error: Exception) {
+                null
+            }
+            if (stream == null) {
+                _catchupError.value = "Replica non disponibile"
+                return@launch
+            }
+            _catchupError.value = null
+            _catchupSession.value = CatchupSession(programme = programme, streamUrl = stream.url)
+            val initError = vlc.initError
+            if (initError != null) {
+                _playback.value = PlayerStatus.Error(initError)
+                return@launch
+            }
+            _playback.value = PlayerStatus.Buffering
+            // Il CDN del catch-up risponde senza Referer e con lo User-Agent
+            // predefinito dell'app: niente intestazioni per-network qui.
+            vlc.play(url = stream.url, channelUserAgent = null, referrer = null)
+        }
+    }
+
+    /** Abbandona la replica e torna al live del canale corrente. */
+    fun returnToLive() {
+        val channel = _currentChannel.value ?: return
+        if (_catchupSession.value == null) return
+        playChannel(channel)
+    }
+
+    /** Svuota lo stato Rivedi al cambio canale (zapping = uscita dal catch-up). */
+    private fun resetCatchupState() {
+        _catchupSession.value = null
+        _catchupDays.value = null
+        _catchupLoading.value = false
+        _catchupError.value = null
+    }
+
     init {
         // Risolve il canale appena la playlist è disponibile.
         scope.launch {
@@ -604,10 +705,12 @@ class DesktopPlayerState(
 
     fun playChannel(channel: Channel) {
         // Nuova sessione di canale: annulla qualunque riconnessione pendente
-        // (feature 7) e riparte con i contatori a zero.
+        // (feature 7) e riparte con i contatori a zero. Lo zapping esce dal
+        // catch-up: la replica appartiene al canale da cui è stata scelta.
         reconnectJob?.cancel()
         reconnectJob = null
         reconnectAttempts = 0
+        resetCatchupState()
         _currentChannel.value = channel
         // La scelta della traccia riguarda il singolo canale (come su
         // Android): azzero liste ed evidenziazioni, la nuova lettura parte
@@ -901,6 +1004,17 @@ class DesktopPlayerState(
      * riproduzione (comportamento standard dei player TV).
      */
     private fun replayCurrentChannel() {
+        // Rivedi attivo: la riconnessione riapre la replica, non il live.
+        _catchupSession.value?.let { session ->
+            val initError = vlc.initError
+            if (initError != null) {
+                _playback.value = PlayerStatus.Error(initError)
+                return
+            }
+            _playback.value = PlayerStatus.Buffering
+            vlc.play(url = session.streamUrl, channelUserAgent = null, referrer = null)
+            return
+        }
         val channel = _currentChannel.value ?: return
         val initError = vlc.initError
         if (initError != null) {
@@ -953,5 +1067,9 @@ class DesktopPlayerState(
 
         /** Backoff crescente dei tentativi: blackout brevi si sanano da soli. */
         val RECONNECT_BACKOFF_MS = listOf(1_500L, 4_000L, 8_000L)
+
+        /** Messaggio d'errore del pannello Rivedi (desktop: stringa diretta). */
+        const val CATCHUP_ERROR_MESSAGE =
+            "Impossibile caricare la programmazione del Rivedi. Controlla la connessione e riprova."
     }
 }

@@ -10,6 +10,7 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import it.fast4x.opentv.data.repository.EpgRepository
 import it.fast4x.opentv.data.repository.ItalianPlaylistStrings
+import it.fast4x.opentv.data.repository.La7CatchupRepository
 import it.fast4x.opentv.data.repository.PlaylistRepository
 import it.fast4x.opentv.data.store.UserPrefsStore
 import java.awt.GraphicsEnvironment
@@ -34,6 +35,8 @@ class DesktopDependencies(baseDir: File) {
     )
 
     val epgRepository: EpgRepository = EpgRepository()
+
+    val catchupRepository: La7CatchupRepository = La7CatchupRepository()
 }
 
 fun main() {

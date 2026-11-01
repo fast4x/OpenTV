@@ -316,7 +316,7 @@ private fun GuideGrid(
                             .coerceIn(0f, 1f)
                         Box(
                             modifier = Modifier
-                                .padding(start = nowFraction.times(totalWidth))
+                                .padding(start = nowFraction * totalWidth)
                                 .width(2.dp)
                                 .height(18.dp)
                                 .background(AppPrimary),

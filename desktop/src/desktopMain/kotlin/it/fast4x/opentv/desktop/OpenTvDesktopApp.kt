@@ -38,6 +38,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Close
@@ -70,6 +71,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -124,7 +126,11 @@ import it.fast4x.opentv.data.model.ProgrammeReminder
 import it.fast4x.opentv.data.model.SourceProfile
 import it.fast4x.opentv.data.model.UNCATEGORIZED_GROUP
 import it.fast4x.opentv.data.model.channelGroupKeys
+import it.fast4x.opentv.data.repository.CatchupDay
+import it.fast4x.opentv.data.repository.CatchupProgramme
+import it.fast4x.opentv.data.repository.CatchupSession
 import it.fast4x.opentv.data.repository.EpgStatus
+import it.fast4x.opentv.data.repository.La7Catchup
 import it.fast4x.opentv.data.repository.SourceResolver
 import it.fast4x.opentv.data.remote.ProfileCodec
 import it.fast4x.opentv.data.remote.ProfileExportBundle
@@ -1057,6 +1063,20 @@ private fun DesktopPlayerScreen(
     // nella barra superiore; disabilitato se la guida non ha dati per il canale).
     var showSchedule by remember { mutableStateOf(false) }
 
+    // Rivedi (catch-up La7 Play): pannello gemello della programmazione, con
+    // i 7 giorni e le repliche. La guida si carica alla prima apertura.
+    val catchupSession by state.catchupSession.collectAsState()
+    val catchupDays by state.catchupDays.collectAsState()
+    val catchupLoading by state.catchupLoading.collectAsState()
+    val catchupError by state.catchupError.collectAsState()
+    var showCatchup by remember { mutableStateOf(false) }
+    val catchupSupported = channel?.let { La7Catchup.slugFor(it) } != null
+    fun openCatchupPanel() {
+        state.loadCatchupSchedule()
+        showCatchup = true
+        showSchedule = false
+    }
+
     // Promemoria programmi (feature "reminder"): le voci armate (chiave
     // canale@inizio) arrivano dal DataStore; il campanello nella programmazione
     // arma/disarma la voce. La notifica la spara lo scheduler a livello app.
@@ -1450,6 +1470,30 @@ private fun DesktopPlayerScreen(
                         style = MaterialTheme.typography.labelLarge,
                     )
                 }
+                // Rivedi (catch-up La7 Play): il pulsante è visibile SOLO sui
+                // canali coperti dal servizio (La7, La7 Cinema, match
+                // sull'identità del canale); evidenziato mentre una replica
+                // è in riproduzione.
+                if (catchupSupported) {
+                    TextButton(
+                        onClick = {
+                            if (showCatchup) showCatchup = false else openCatchupPanel()
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.History,
+                            contentDescription = null,
+                            tint = if (catchupSession != null) AppPrimary else Color.White,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            "Rivedi",
+                            color = if (catchupSession != null) AppPrimary else Color.White,
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                    }
+                }
                 // Proporzioni video (porting Android): cicla Adatta → Zoom →
                 // Riempi con feedback temporaneo nella riga dei suggerimenti.
                 IconButton(onClick = {
@@ -1792,6 +1836,27 @@ private fun DesktopPlayerScreen(
                     reminders = reminderKeys,
                     onToggleReminder = ::toggleReminder,
                     onClose = { showSchedule = false },
+                )
+            }
+
+            // Pannello Rivedi (catch-up La7 Play): stessa collocazione della
+            // programmazione, i due pannelli si escludono a vicenda.
+            AnimatedVisibility(
+                visible = showCatchup && catchupSupported,
+                enter = expandHorizontally() + fadeIn(),
+                exit = shrinkHorizontally() + fadeOut(),
+            ) {
+                CatchupPanel(
+                    days = catchupDays,
+                    loading = catchupLoading,
+                    error = catchupError,
+                    session = catchupSession,
+                    onSelect = { programme ->
+                        state.playCatchup(programme)
+                    },
+                    onReturnToLive = { state.returnToLive() },
+                    onRetry = { state.loadCatchupSchedule(force = true) },
+                    onClose = { showCatchup = false },
                 )
             }
         }
@@ -2863,6 +2928,239 @@ private fun ScheduleItemRow(
                 )
             }
         }
+    }
+}
+
+/**
+ * Etichetta del giorno Rivedi per i chip: "Oggi", "Ieri", poi il nome del
+ * giorno con la data. Gemella della funzione Android su PlayerScreen.
+ */
+private fun catchupDayLabel(startOfDay: Long): String {
+    val now = System.currentTimeMillis()
+    return when (dayKey(startOfDay)) {
+        dayKey(now) -> "Oggi"
+        dayKey(now - 86_400_000L) -> "Ieri"
+        else -> SimpleDateFormat("EEEE d MMMM", Locale.getDefault()).format(Date(startOfDay))
+    }
+}
+
+/**
+ * Pannello "Rivedi" (catch-up La7 Play, gemello del foglio Android):
+ * selettore dei giorni (oggi + i 6 precedenti) e lista delle repliche del
+ * giorno scelto. Durante il catch-up l'intestazione mostra il programma in
+ * riproduzione con il ritorno al live a un clic.
+ */
+@Composable
+private fun CatchupPanel(
+    days: List<CatchupDay>?,
+    loading: Boolean,
+    error: String?,
+    session: CatchupSession?,
+    onSelect: (CatchupProgramme) -> Unit,
+    onReturnToLive: () -> Unit,
+    onRetry: () -> Unit,
+    onClose: () -> Unit,
+) {
+    var selectedDay by remember(days) { mutableStateOf(0) }
+
+    Column(
+        modifier = Modifier
+            .width(360.dp)
+            .fillMaxHeight()
+            .background(Color(0xFF0A0D14)),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "Rivedi",
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                if (session != null) {
+                    Text(
+                        session.programme.title,
+                        color = AppPrimary,
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    TextButton(
+                        onClick = onReturnToLive,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                        modifier = Modifier.padding(top = 2.dp),
+                    ) {
+                        Text(
+                            "Torna al live",
+                            color = AppPrimary,
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    }
+                }
+            }
+            IconButton(onClick = onClose) {
+                Icon(Icons.Filled.Close, "Chiudi Rivedi", tint = Color.White)
+            }
+        }
+        HorizontalDivider(color = Color(0xFF1D2736))
+
+        when {
+            loading -> Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                CircularProgressIndicator(color = AppPrimary, modifier = Modifier.size(28.dp))
+            }
+
+            error != null -> Column(Modifier.padding(16.dp)) {
+                Text(
+                    error,
+                    color = AppError,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                TextButton(
+                    onClick = onRetry,
+                    modifier = Modifier.padding(top = 6.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp),
+                ) {
+                    Text("Riprova", color = AppPrimary)
+                }
+            }
+
+            days == null || days.isEmpty() -> Text(
+                "Nessuna replica disponibile per questo canale.",
+                color = Color(0xFF6B7688),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(16.dp),
+            )
+
+            else -> {
+                val day = days[selectedDay.coerceIn(days.indices)]
+
+                // Chip dei giorni: il selezionato è pieno (tondo primario),
+                // gli altri in contorno; la riga scorre se i 7 non entrano.
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    days.forEachIndexed { index, entry ->
+                        val selected = index == selectedDay
+                        if (selected) {
+                            FilledTonalButton(
+                                onClick = { selectedDay = index },
+                                contentPadding = PaddingValues(horizontal = 12.dp),
+                            ) {
+                                Text(
+                                    catchupDayLabel(entry.startOfDay)
+                                        .replaceFirstChar { it.uppercase() },
+                                )
+                            }
+                        } else {
+                            OutlinedButton(
+                                onClick = { selectedDay = index },
+                                contentPadding = PaddingValues(horizontal = 12.dp),
+                            ) {
+                                Text(
+                                    catchupDayLabel(entry.startOfDay)
+                                        .replaceFirstChar { it.uppercase() },
+                                )
+                            }
+                        }
+                    }
+                }
+
+                LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                    items(day.programmes.size) { index ->
+                        CatchupPanelRow(
+                            programme = day.programmes[index],
+                            isActive = session != null &&
+                                session.programme == day.programmes[index],
+                            onSelect = onSelect,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Riga replica del pannello Rivedi: orario, titolo, sinossi e stato a destra
+ * ("In riproduzione", "Non disponibile", "Protetta (DRM)"). Le righe non
+ * riproducibili restano visibili ma non cliccabili, con la causa leggibile.
+ */
+@Composable
+private fun CatchupPanelRow(
+    programme: CatchupProgramme,
+    isActive: Boolean,
+    onSelect: (CatchupProgramme) -> Unit,
+) {
+    val playable = programme.playable
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(if (isActive) AppPrimary.copy(alpha = 0.12f) else Color.Transparent)
+            .then(if (playable) Modifier.clickable { onSelect(programme) } else Modifier)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = formatHourRange(programme.start, programme.stop),
+            style = MaterialTheme.typography.labelMedium,
+            color = if (isActive) AppPrimary else Color(0xFFAEB9C9),
+            modifier = Modifier.width(104.dp),
+        )
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = programme.title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = when {
+                    isActive -> AppPrimary
+                    playable -> Color.White
+                    else -> Color(0xFF6B7688)
+                },
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            programme.description?.takeIf { it.isNotBlank() }?.let { description ->
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF6B7688),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+        }
+        when {
+            isActive -> CatchupStateBadge("In riproduzione")
+            !playable && programme.drmProtected -> CatchupStateBadge("Protetta (DRM)", dim = true)
+            !playable -> CatchupStateBadge("Non disponibile", dim = true)
+        }
+    }
+}
+
+/** Badge di stato di una riga Rivedi del pannello desktop. */
+@Composable
+private fun CatchupStateBadge(text: String, dim: Boolean = false) {
+    Surface(
+        color = if (dim) Color.Transparent else AppPrimary.copy(alpha = 0.18f),
+        shape = RoundedCornerShape(4.dp),
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (dim) Color(0xFF6B7688) else AppPrimary,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+        )
     }
 }
 

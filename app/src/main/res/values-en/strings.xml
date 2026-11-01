@@ -171,4 +171,17 @@
     <string name="settings_hidden_restore_all">Restore all</string>
     <string name="settings_hidden_restored">Channel restored.</string>
     <string name="settings_hidden_restored_all">All hidden channels restored.</string>
+    <!-- Feature "Rivedi" (catch-up TV La7 Play): pulsante solo sui canali
+         La7 / La7 Cinema, pannello con gli ultimi 7 giorni nel player. -->
+    <string name="catchup_open">Watch again</string>
+    <string name="catchup_title">Watch again</string>
+    <string name="catchup_badge">Watch again</string>
+    <string name="catchup_yesterday">Yesterday</string>
+    <string name="catchup_playing">Playing</string>
+    <string name="catchup_unavailable">Unavailable</string>
+    <string name="catchup_drm">Protected (DRM)</string>
+    <string name="catchup_return_live">Back to live</string>
+    <string name="catchup_empty">No programmes available for this day.</string>
+    <string name="catchup_error">Could not load the catch-up schedule. Check your connection and try again.</string>
+    <string name="catchup_notification">Catch-up · %1$s</string>
 </resources>

@@ -3,6 +3,7 @@ package it.fast4x.opentv
 import android.app.Application
 import android.content.Context
 import it.fast4x.opentv.data.repository.EpgRepository
+import it.fast4x.opentv.data.repository.La7CatchupRepository
 import it.fast4x.opentv.data.repository.PlaylistRepository
 import it.fast4x.opentv.data.store.UserPrefsStore
 import it.fast4x.opentv.media.ProgrammeReminderScheduler
@@ -34,6 +35,8 @@ class OpenTvApplication : Application() {
         private set
     lateinit var epgRepository: EpgRepository
         private set
+    lateinit var catchupRepository: La7CatchupRepository
+        private set
 
     override fun onCreate() {
         super.onCreate()
@@ -54,6 +57,7 @@ class OpenTvApplication : Application() {
             strings = ResourcePlaylistStrings(this),
         )
         epgRepository = EpgRepository()
+        catchupRepository = La7CatchupRepository()
 
         // Migrazione preferenze pre-fix15 (campo playlist pre-compilato con
         // l'URL Italia, campo EPG con gli URL dei vecchi chip): i valori
