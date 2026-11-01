@@ -79,6 +79,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
@@ -1489,7 +1490,10 @@ private fun CatchupSheet(
                     style = MaterialTheme.typography.bodyMedium,
                     color = AppError,
                 )
-                TextButton(onClick = onRetry, modifier = Modifier.padding(top = 6.dp)) {
+                TextButton(
+                    onClick = onRetry,
+                    modifier = Modifier.padding(top = 6.dp).tvFocusHighlight(),
+                ) {
                     Text(stringResource(R.string.retry))
                 }
             }
@@ -1520,15 +1524,23 @@ private fun CatchupSheet(
                 ) {
                     days.forEachIndexed { index, entry ->
                         val selected = index == selectedDay
+                        // tvFocusHighlight: su TV l'evidenza del focus sui chip
+                        // è la stessa dei controlli del player (bordo primario).
                         if (selected) {
-                            FilledTonalButton(onClick = { selectedDay = index }) {
+                            FilledTonalButton(
+                                onClick = { selectedDay = index },
+                                modifier = Modifier.tvFocusHighlight(),
+                            ) {
                                 Text(
                                     catchupDayLabel(entry.startOfDay, todayLabel, yesterdayLabel)
-                                        .replaceFirstChar { it.uppercase(Locale.getDefault()) },
+                                        .replaceFirstChar { it.uppercase(LocalLocale.current.platformLocale) },
                                 )
                             }
                         } else {
-                            OutlinedButton(onClick = { selectedDay = index }) {
+                            OutlinedButton(
+                                onClick = { selectedDay = index },
+                                modifier = Modifier.tvFocusHighlight(),
+                            ) {
                                 Text(
                                     catchupDayLabel(entry.startOfDay, todayLabel, yesterdayLabel)
                                         .replaceFirstChar { it.uppercase(LocalLocale.current.platformLocale) },
@@ -1570,15 +1582,33 @@ private fun CatchupProgrammeRow(
     onSelect: (CatchupProgramme) -> Unit,
 ) {
     val playable = programme.playable
+    // Evidenza del focus per il D-pad (TV): la riga in riproduzione ha la sua
+    // tinta primaria, le altre si accendono quando il focus le attraversa.
+    var rowFocused by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            // focusable: su Android TV il D-pad attraversa le righe come
-            // nella programmazione EPG.
-            .focusable()
-            .background(if (isActive) AppPrimary.copy(alpha = 0.12f) else Color.Transparent)
+            .onFocusChanged { rowFocused = it.isFocused }
             .then(
-                if (playable) Modifier.clickable { onSelect(programme) } else Modifier,
+                // Focus TV (fix43): il pattern è quello dei fogli già
+                // collaudati — riga CLICCABILE (focus + OK riproduce, come le
+                // righe delle tracce audio) per le repliche riproducibili,
+                // riga SOLO FOCUSABILE (attraversabile, senza azione su OK,
+                // come le righe della programmazione EPG) per quelle non
+                // disponibili. Prima: .focusable() PRIMA di .clickable()
+                // creava due target di focus sullo stesso nodo e il focus
+                // poteva atterrare su quello che non gestisce OK — la
+                // pressione di OK non avviava la replica sul telecomando.
+                if (playable) Modifier
+                    .clickable { onSelect(programme) }
+                else Modifier.focusable(),
+            )
+            .background(
+                when {
+                    isActive -> AppPrimary.copy(alpha = 0.12f)
+                    rowFocused -> Color.White.copy(alpha = 0.08f)
+                    else -> Color.Transparent
+                },
             )
             .padding(horizontal = 20.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
