@@ -177,7 +177,7 @@
     'footer.by': 'An open-source project by',
     'footer.license': 'Released under the MIT license',
     'mock.title': 'TV guide · Tonight',
-    'mock.chname': 'Rai 1 · Live',
+    'mock.chname': 'Canale 01 · Live',
     'mock.chip1': 'Automatic EPG',
     'mock.chip2': 'D-pad ready for the living room',
     'mock.phstatus': 'Live · HD'
