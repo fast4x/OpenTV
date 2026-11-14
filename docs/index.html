@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="meta.title">OpenTV · La TV libera, su ogni schermo</title>
+  <meta name="description" content="OpenTV è un player IPTV nativo e open source per i canali in chiaro: Android, Android TV, Windows, Linux e macOS. Guida TV automatica, preferiti, promemoria e zero configurazione.">
+  <meta name="theme-color" content="#05070e">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="OpenTV — Watch free TV on every screen">
+  <meta property="og:description" content="Player IPTV open source per i canali in chiaro, su Android, Android TV, Windows, Linux e macOS.">
+  <meta property="og:image" content="assets/img/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <a class="skip" href="#main" data-i18n="a11y.skip">Salta al contenuto</a>
+
+  <!-- Effetti di sfondo -->
+  <div class="bg-fx" aria-hidden="true">
+    <div class="orb orb-a"></div>
+    <div class="orb orb-b"></div>
+    <div class="orb orb-c"></div>
+    <div class="grid-fx"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header" id="top">
+    <div class="wrap header-wrap">
+      <a class="brand" href="#top" aria-label="OpenTV">
+        <svg class="brand-logo" viewBox="0 0 64 64" aria-hidden="true">
+          <defs>
+            <linearGradient id="lg-brand" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#5b8cff"/>
+              <stop offset=".55" stop-color="#9d6bff"/>
+              <stop offset="1" stop-color="#22d3ee"/>
+            </linearGradient>
+          </defs>
+          <rect x="4" y="18" width="56" height="38" rx="9" fill="none" stroke="url(#lg-brand)" stroke-width="5"/>
+          <path d="M22 6l10 10 10-10" fill="none" stroke="url(#lg-brand)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M27 29v16l14-8z" fill="url(#lg-brand)"/>
+        </svg>
+        <span class="brand-name">OpenTV</span>
+      </a>
+      <nav class="nav" aria-label="Principale">
+        <button class="nav-toggle" aria-label="Apri il menu" aria-expanded="false">
+          <span></span><span></span>
+        </button>
+        <div class="nav-links">
+          <a href="#funzionalita" data-i18n="nav.features">Funzionalità</a>
+          <a href="#dispositivi" data-i18n="nav.devices">Dispositivi</a>
+          <a href="#come-funziona" data-i18n="nav.how">Come funziona</a>
+          <a href="#open-source" data-i18n="nav.oss">Open source</a>
+          <a href="#faq" data-i18n="nav.faq">FAQ</a>
+          <a class="btn btn-ghost btn-sm" href="https://github.com/fast4x/OpenTV" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+            <span data-i18n="nav.github">GitHub</span>
+          </a>
+          <a class="btn btn-primary btn-sm" href="https://github.com/fast4x/OpenTV/releases/latest" target="_blank" rel="noopener noreferrer" data-i18n="nav.download">Scarica</a>
+          <button class="lang-btn" id="langBtn" type="button" title="Cambia lingua / Switch language">EN</button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="wrap hero-wrap">
+        <div class="hero-copy">
+          <a class="pill reveal" href="https://github.com/fast4x/OpenTV/releases/latest" target="_blank" rel="noopener noreferrer">
+            <span class="pill-dot"></span>
+            <span data-i18n="hero.badge">v1.0.0 — nuova release · 14 nov 2026</span>
+          </a>
+          <h1 class="reveal" style="--d:.06s" data-i18n="hero.title">La TV libera, su <span class="grad">ogni schermo</span>.</h1>
+          <p class="hero-sub reveal" style="--d:.12s" data-i18n="hero.sub">OpenTV è un player IPTV nativo e open source per i canali in chiaro. Apri l'app, scegli il tuo paese e sei già davanti alla TV: guida, preferiti e promemoria inclusi. Zero configurazione.</p>
+          <div class="hero-cta reveal" style="--d:.18s">
+            <a class="btn btn-primary btn-lg" href="https://github.com/fast4x/OpenTV/releases/latest" target="_blank" rel="noopener noreferrer">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7 10 12 15 17 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <span data-i18n="hero.cta.dl">Scarica la v1.0.0</span>
+            </a>
+            <a class="btn btn-ghost btn-lg" href="https://github.com/fast4x/OpenTV" target="_blank" rel="noopener noreferrer">
+              <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+              <span data-i18n="hero.cta.gh">Su GitHub</span>
+            </a>
+          </div>
+          <div class="hero-chips reveal" style="--d:.24s" aria-hidden="true">
+            <span class="chip-min">Android</span>
+            <span class="chip-min">Android TV</span>
+            <span class="chip-min">Windows</span>
+            <span class="chip-min">Linux</span>
+            <span class="chip-min">macOS</span>
+          </div>
+          <div class="hero-stats reveal" style="--d:.3s">
+            <div class="stat"><b>5</b><span data-i18n="stats.1">piattaforme supportate</span></div>
+            <div class="stat"><b>0</b><span data-i18n="stats.2">configurazione richiesta</span></div>
+            <div class="stat"><b>6h</b><span data-i18n="stats.3">cache offline della playlist</span></div>
+            <div class="stat"><b>100%</b><span data-i18n="stats.4">open source · licenza MIT</span></div>
+          </div>
+        </div>
+
+        <!-- Mockup TV -->
+        <div class="hero-mock reveal" style="--d:.2s">
+          <div class="mock" id="mock" aria-hidden="true">
+            <div class="tv">
+              <div class="tv-screen">
+                <div class="ts-top">
+                  <span class="live"><i></i>LIVE</span>
+                  <span class="ts-title" data-i18n="mock.title">Guida TV · Stasera</span>
+                  <span class="ts-clock">20:15</span>
+                </div>
+                <div class="ts-times"><span>20:00</span><span>20:30</span><span>21:00</span><span>21:30</span></div>
+                <div class="ts-row">
+                  <span class="ts-ch">Rai 1</span>
+                  <div class="ts-track"><span class="blk on" style="width:38%">TG1</span><span class="blk" style="width:44%">Film</span></div>
+                </div>
+                <div class="ts-row">
+                  <span class="ts-ch">Rai 2</span>
+                  <div class="ts-track"><span class="blk b" style="width:30%">Docu</span><span class="blk on" style="width:42%">Talk</span></div>
+                </div>
+                <div class="ts-row">
+                  <span class="ts-ch">Canale 5</span>
+                  <div class="ts-track"><span class="blk on c" style="width:46%">Reality</span><span class="blk" style="width:36%">Serial</span></div>
+                </div>
+                <div class="ts-row">
+                  <span class="ts-ch">La7</span>
+                  <div class="ts-track"><span class="blk" style="width:26%">Talk</span><span class="blk d" style="width:48%">Rivedi</span></div>
+                </div>
+                <div class="ts-bar">
+                  <span class="ts-play"></span>
+                  <div class="ts-prog"><i></i></div>
+                  <span class="ts-chname" data-i18n="mock.chname">Rai 1 · Diretta</span>
+                </div>
+              </div>
+              <div class="tv-stand"></div>
+            </div>
+            <div class="phone">
+              <div class="ph-screen">
+                <div class="ph-video"><span class="ph-playbtn"></span></div>
+                <div class="ph-meta"><b>Rai 1</b><span data-i18n="mock.phstatus">Diretta · HD</span></div>
+              </div>
+            </div>
+            <div class="chip chip-1" data-i18n="mock.chip1">EPG automatica</div>
+            <div class="chip chip-2" data-i18n="mock.chip2">D-pad pronto per il salotto</div>
+            <div class="mock-glow"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ticker canali -->
+      <div class="ticker" aria-hidden="true">
+        <div class="ticker-label"><span data-i18n="ticker.label">Canali in chiaro pronti all'avvio</span></div>
+        <div class="ticker-view">
+          <div class="ticker-track">
+            <span>Rai 1</span><span>Rai 2</span><span>Rai 3</span><span>Canale 5</span><span>Italia 1</span><span>La7</span><span>TV8</span><span>NOVE</span><span>Rai Sport</span><span>Rai Movie</span><span>Rai Premium</span><span>Iris</span><span>La5</span><span>Cielo</span><span>TV2000</span><span>Real Time</span>
+            <span>Rai 1</span><span>Rai 2</span><span>Rai 3</span><span>Canale 5</span><span>Italia 1</span><span>La7</span><span>TV8</span><span>NOVE</span><span>Rai Sport</span><span>Rai Movie</span><span>Rai Premium</span><span>Iris</span><span>La5</span><span>Cielo</span><span>TV2000</span><span>Real Time</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FUNZIONALITÀ -->
+    <section class="section" id="funzionalita">
+      <div class="wrap">
+        <div class="sec-head">
+          <span class="kicker reveal" data-i18n="features.kicker">Funzionalità</span>
+          <h2 class="reveal" style="--d:.06s" data-i18n="features.title">Tutto quello che serve, già dentro</h2>
+          <p class="sec-sub reveal" style="--d:.12s" data-i18n="features.sub">Niente account, niente configurazione: OpenTV si occupa di playlist, guida TV e riproduzione.</p>
+        </div>
+        <div class="cards">
+          <article class="card reveal">
+            <span class="card-ico"><svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span>
+            <h3 data-i18n="f1.t">Zero configurazione</h3>
+            <p data-i18n="f1.d">I canali del tuo paese sono pronti al primo avvio, con playlist pubbliche aggiornate in automatico.</p>
+          </article>
+          <article class="card reveal" style="--d:.05s">
+            <span class="card-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="3" y1="9.5" x2="21" y2="9.5" stroke="currentColor" stroke-width="1.6"/><line x1="8" y1="2.5" x2="8" y2="6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="16" y1="2.5" x2="16" y2="6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="6.5" y="12.5" width="5" height="4.5" rx="1" fill="currentColor" opacity=".85"/></svg></span>
+            <h3 data-i18n="f2.t">Guida TV automatica</h3>
+            <p data-i18n="f2.d">EPG XMLTV caricata da sola: ora in onda, palinsesto completo e griglia canali per programmare la serata.</p>
+          </article>
+          <article class="card reveal" style="--d:.1s">
+            <span class="card-ico"><svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="13" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="8" y1="21" x2="16" y2="21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M9.5 8.5v4l3.5-2z" fill="currentColor"/></svg></span>
+            <h3 data-i18n="f3.t">Pensato per il salotto</h3>
+            <p data-i18n="f3.d">Su Android TV: navigazione con D-pad, banner TV e player comodo col telecomando.</p>
+          </article>
+          <article class="card reveal">
+            <span class="card-ico"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21.2l7.8-7.7 1-1.1a5.5 5.5 0 0 0 0-7.8z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span>
+            <h3 data-i18n="f4.t">Preferiti e cronologia</h3>
+            <p data-i18n="f4.d">Liste di preferiti indipendenti per ogni sorgente e canali recenti fissati in home.</p>
+          </article>
+          <article class="card reveal" style="--d:.05s">
+            <span class="card-ico"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M13.7 21a2 2 0 0 1-3.4 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+            <h3 data-i18n="f5.t">Promemoria programmi</h3>
+            <p data-i18n="f5.d">Ricevi una notifica di sistema quando inizia il programma che stai aspettando.</p>
+          </article>
+          <article class="card reveal" style="--d:.1s">
+            <span class="card-ico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="21" y1="21" x2="16.2" y2="16.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+            <h3 data-i18n="f6.t">Ricerca e generi</h3>
+            <p data-i18n="f6.d">Cerca i canali per nome (maiuscole e accenti ignorati) e filtra per categoria della playlist.</p>
+          </article>
+          <article class="card reveal">
+            <span class="card-ico"><svg viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="4" y1="15" x2="20" y2="15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="10" y1="3" x2="8" y2="21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="16" y1="3" x2="14" y2="21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+            <h3 data-i18n="f7.t">Zapping numerico</h3>
+            <p data-i18n="f7.d">Digita il numero del canale per saltare subito lì, come col telecomando di una volta.</p>
+          </article>
+          <article class="card reveal" style="--d:.05s">
+            <span class="card-ico"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <h3 data-i18n="f8.t">Riproduzione robusta</h3>
+            <p data-i18n="f8.d">HLS, DASH e MPEG-TS con riconnessione automatica e 6 ore di cache offline della playlist.</p>
+          </article>
+          <article class="card reveal" style="--d:.1s">
+            <span class="card-ico"><svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="16" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="12.5" y="12.5" width="7" height="5" rx="1.2" fill="currentColor" opacity=".9"/><path d="M9 8.5v5l4-2.5z" fill="currentColor"/></svg></span>
+            <h3 data-i18n="f9.t">Mini-player e statistiche</h3>
+            <p data-i18n="f9.d">Picture-in-Picture per fare altro mentre guardi, e pannello statistiche stream in stile VLC.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- DOWNLOAD -->
+    <section class="section section-alt" id="dispositivi">
+      <div class="wrap">
+        <div class="sec-head">
+          <span class="kicker reveal" data-i18n="dl.kicker">Download</span>
+          <h2 class="reveal" style="--d:.06s" data-i18n="dl.title">Un'app, cinque destinazioni</h2>
+          <p class="sec-sub reveal" style="--d:.12s" data-i18n="dl.sub">Pacchetti nativi per ogni piattaforma, pubblicati su GitHub Releases.</p>
+        </div>
+        <div class="dl-grid">
+          <article class="dl-card reveal">
+            <div class="dl-head">
+              <span class="dl-ico"><svg viewBox="0 0 24 24"><path d="M4.5 10.5a7.5 7.5 0 0 1 15 0z" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="6.8" y1="6.4" x2="5.6" y2="4.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="17.2" y1="6.4" x2="18.4" y2="4.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="9" cy="8.4" r=".9" fill="currentColor"/><circle cx="15" cy="8.4" r=".9" fill="currentColor"/><line x1="3" y1="10.5" x2="21" y2="10.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M5 13v6.5a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19.5V13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="8.5" y1="3.4" x2="8.5" y2="2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="15.5" y1="3.4" x2="15.5" y2="2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+              <h3 data-i18n="d1.t">Android · telefono, tablet e TV</h3>
+            </div>
+            <p data-i18n="d1.d">Un unico APK firmato e universale, anche per Android TV con launcher leanback.</p>
+            <p class="dl-meta" data-i18n="d1.meta">OpenTV-v1.0.0-Android.apk · 4,1 MB</p>
+            <p class="dl-note" data-i18n="d1.note">Funziona su smartphone, tablet e Android TV.</p>
+            <a class="btn btn-primary btn-block" href="https://github.com/fast4x/OpenTV/releases/latest" target="_blank" rel="noopener noreferrer"><span data-i18n="dl.btn">Scarica</span></a>
+          </article>
+          <article class="dl-card reveal" style="--d:.05s">
+            <div class="dl-head">
+              <span class="dl-ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8.2" height="8.2" rx="1" fill="currentColor" opacity=".9"/><rect x="12.8" y="3" width="8.2" height="8.2" rx="1" fill="currentColor" opacity=".55"/><rect x="3" y="12.8" width="8.2" height="8.2" rx="1" fill="currentColor" opacity=".55"/><rect x="12.8" y="12.8" width="8.2" height="8.2" rx="1" fill="currentColor" opacity=".9"/></svg></span>
+              <h3 data-i18n="d2.t">Windows</h3>
+            </div>
+            <p data-i18n="d2.d">Installer MSI ed EXE con libVLC già incluso: nessuna installazione di VLC richiesta.</p>
+            <p class="dl-meta" data-i18n="d2.meta">MSI + EXE · ~201 MB</p>
+            <p class="dl-note" data-i18n="d2.note">Motore libVLC 3.0.24 incluso nel pacchetto.</p>
+            <a class="btn btn-primary btn-block" href="https://github.com/fast4x/OpenTV/releases/latest" target="_blank" rel="noopener noreferrer"><span data-i18n="dl.btn">Scarica</span></a>
+          </article>
+          <article class="dl-card reveal" style="--d:.1s">
+            <div class="dl-head">
+              <span class="dl-ico"><svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="16" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><polyline points="6.5 9 9.5 12 6.5 15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="15.5" x2="17" y2="15.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+              <h3 data-i18n="d3.t">Linux</h3>
+            </div>
+            <p data-i18n="d3.d">Pacchetti DEB e RPM per le distribuzioni principali.</p>
+            <p class="dl-meta" data-i18n="d3.meta">DEB + RPM · 107–127 MB</p>
+            <p class="dl-note" data-i18n="d3.note">Richiede VLC sul sistema: sudo apt install vlc.</p>
+            <a class="btn btn-primary btn-block" href="https://github.com/fast4x/OpenTV/releases/latest" target="_blank" rel="noopener noreferrer"><span data-i18n="dl.btn">Scarica</span></a>
+          </article>
+          <article class="dl-card reveal" style="--d:.15s">
+            <div class="dl-head">
+              <span class="dl-ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M2 19h20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+              <h3 data-i18n="d4.t">macOS</h3>
+            </div>
+            <p data-i18n="d4.d">DMG nativi per Apple Silicon e Intel.</p>
+            <p class="dl-meta" data-i18n="d4.meta">DMG · Apple Silicon + Intel · 134–135 MB</p>
+            <p class="dl-note" data-i18n="d4.note">Non firmato: primo avvio con tasto destro → Apri. Richiede VLC in /Applications.</p>
+            <a class="btn btn-primary btn-block" href="https://github.com/fast4x/OpenTV/releases/latest" target="_blank" rel="noopener noreferrer"><span data-i18n="dl.btn">Scarica</span></a>
+          </article>
+        </div>
+        <div class="dl-foot reveal">
+          <p data-i18n="dl.foot">Build firmata per Android; pacchetti desktop generati automaticamente da GitHub Actions.</p>
+          <a class="btn btn-ghost" href="https://github.com/fast4x/OpenTV/releases" target="_blank" rel="noopener noreferrer" data-i18n="dl.all">Tutte le release su GitHub</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- COME FUNZIONA -->
+    <section class="section" id="come-funziona">
+      <div class="wrap">
+        <div class="sec-head">
+          <span class="kicker reveal" data-i18n="how.kicker">Come funziona</span>
+          <h2 class="reveal" style="--d:.06s" data-i18n="how.title">Tre passi e sei in onda</h2>
+          <p class="sec-sub reveal" style="--d:.12s" data-i18n="how.sub">Dall'installazione alla prima serata davanti allo schermo.</p>
+        </div>
+        <div class="steps">
+          <article class="step reveal">
+            <span class="step-num">01</span>
+            <h3 data-i18n="s1.t">Scarica e installa</h3>
+            <p data-i18n="s1.d">Scegli il pacchetto per il tuo dispositivo dalla pagina Releases e installalo come una normale applicazione.</p>
+          </article>
+          <article class="step reveal" style="--d:.08s">
+            <span class="step-num">02</span>
+            <h3 data-i18n="s2.t">Scegli il paese</h3>
+            <p data-i18n="s2.d">OpenTV scarica da solo le playlist pubbliche di iptv-org e organizza i canali in chiaro per paese.</p>
+          </article>
+          <article class="step reveal" style="--d:.16s">
+            <span class="step-num">03</span>
+            <h3 data-i18n="s3.t">Mettiti comodo</h3>
+            <p data-i18n="s3.d">Sfoglia la guida, salva i preferiti, imposta un promemoria e guarda a schermo intero.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- OPEN SOURCE -->
+    <section class="section section-alt" id="open-source">
+      <div class="wrap">
+        <div class="oss-panel reveal">
+          <div class="oss-copy">
+            <span class="kicker" data-i18n="oss.kicker">Open source</span>
+            <h2 data-i18n="oss.title">Codice aperto, per davvero</h2>
+            <p data-i18n="oss.text">Tutto il progetto è pubblico su GitHub sotto licenza MIT: Kotlin per Android e desktop, Media3/ExoPlayer come motore su Android e libVLC su desktop. Issue, pull request e stelle sono benvenute.</p>
+            <div class="oss-btns">
+              <a class="btn btn-primary" href="https://github.com/fast4x/OpenTV" target="_blank" rel="noopener noreferrer">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="12 2 15.1 8.6 22 9.6 17 14.4 18.2 21.3 12 18 5.8 21.3 7 14.4 2 9.6 8.9 8.6 12 2" fill="currentColor"/></svg>
+                <span data-i18n="oss.b1">Star su GitHub</span>
+              </a>
+              <a class="btn btn-ghost" href="https://github.com/fast4x/OpenTV/issues" target="_blank" rel="noopener noreferrer" data-i18n="oss.b2">Segnala un bug</a>
+              <a class="btn btn-ghost" href="https://github.com/fast4x/OpenTV/pulls" target="_blank" rel="noopener noreferrer" data-i18n="oss.b3">Contribuisci</a>
+            </div>
+          </div>
+          <div class="oss-side">
+            <p class="oss-stack-label" data-i18n="oss.stack">Stack tecnologico</p>
+            <div class="oss-tags" aria-hidden="true">
+              <span>Kotlin</span><span>Media3 / ExoPlayer</span><span>libVLC</span><span>XMLTV · EPG</span><span>M3U / M3U8</span><span>HLS · DASH · MPEG-TS</span>
+            </div>
+            <div class="oss-license" aria-hidden="true">
+              <span class="oss-license-badge">MIT</span>
+              <div><b>License</b><span data-i18n="oss.license">Libera per uso, studio e modifica</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section" id="faq">
+      <div class="wrap wrap-narrow">
+        <div class="sec-head">
+          <span class="kicker reveal" data-i18n="faq.kicker">FAQ</span>
+          <h2 class="reveal" style="--d:.06s" data-i18n="faq.title">Domande frequenti</h2>
+        </div>
+        <div class="faq-list">
+          <details class="reveal"><summary data-i18n="q1">OpenTV è gratuito?</summary><p data-i18n="a1">Sì. È un progetto open source distribuito sotto licenza MIT: puoi usarlo, studiarlo, modificarlo e ridistribuirlo liberamente.</p></details>
+          <details class="reveal" style="--d:.05s"><summary data-i18n="q2">Da dove arrivano i canali?</summary><p data-i18n="a2">Dalle playlist pubbliche del progetto iptv-org, che raccoglie i canali in chiaro disponibili liberamente in streaming. OpenTV le scarica e le aggiorna in automatico, con una cache di 6 ore per funzionare anche offline.</p></details>
+          <details class="reveal" style="--d:.1s"><summary data-i18n="q3">Devo configurare qualcosa?</summary><p data-i18n="a3">No. Al primo avvio indichi il tuo paese e i canali compaiono già pronti, guida TV inclusa.</p></details>
+          <details class="reveal" style="--d:.15s"><summary data-i18n="q4">Su Linux e macOS serve VLC?</summary><p data-i18n="a4">Sì: le build Linux e macOS usano il VLC del sistema. Su Windows libVLC è già incluso nei pacchetti MSI ed EXE.</p></details>
+          <details class="reveal" style="--d:.2s"><summary data-i18n="q5">Posso usare la mia playlist M3U?</summary><p data-i18n="a5">Sì: OpenTV ha un parser dedicato per M3U/M3U8 con cache locale e supporta import/export di playlist e profili.</p></details>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA FINALE -->
+    <section class="section cta-section">
+      <div class="wrap">
+        <div class="cta-panel reveal">
+          <h2 data-i18n="cta.title">Pronto a guardare?</h2>
+          <p data-i18n="cta.sub">Scarica OpenTV e accendi tutti i tuoi schermi.</p>
+          <div class="cta-btns">
+            <a class="btn btn-light btn-lg" href="https://github.com/fast4x/OpenTV/releases/latest" target="_blank" rel="noopener noreferrer" data-i18n="cta.btn">Scarica OpenTV</a>
+            <a class="btn btn-outline-light btn-lg" href="https://github.com/fast4x/OpenTV" target="_blank" rel="noopener noreferrer" data-i18n="cta.gh">Vedi il progetto</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="wrap footer-wrap">
+      <div class="footer-top">
+        <a class="brand" href="#top" aria-label="OpenTV">
+          <svg class="brand-logo" viewBox="0 0 64 64" aria-hidden="true">
+            <rect x="4" y="18" width="56" height="38" rx="9" fill="none" stroke="url(#lg-brand)" stroke-width="5"/>
+            <path d="M22 6l10 10 10-10" fill="none" stroke="url(#lg-brand)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M27 29v16l14-8z" fill="url(#lg-brand)"/>
+          </svg>
+          <span class="brand-name">OpenTV</span>
+        </a>
+        <p class="footer-tag">Watch free TV on every screen.</p>
+        <nav class="footer-nav" aria-label="Footer">
+          <a href="#funzionalita" data-i18n="nav.features">Funzionalità</a>
+          <a href="#dispositivi" data-i18n="nav.devices">Dispositivi</a>
+          <a href="#come-funziona" data-i18n="nav.how">Come funziona</a>
+          <a href="#faq" data-i18n="nav.faq">FAQ</a>
+          <a href="https://github.com/fast4x/OpenTV" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://github.com/fast4x/OpenTV/releases/latest" target="_blank" rel="noopener noreferrer">Releases</a>
+        </nav>
+      </div>
+      <div class="footer-bottom">
+        <span data-i18n="footer.by">Un progetto open source di</span> <a href="https://github.com/fast4x" target="_blank" rel="noopener noreferrer">fast4x</a>
+        <span class="sep">·</span>
+        <span data-i18n="footer.license">Rilasciato sotto licenza MIT</span>
+        <span class="sep">·</span>
+        <span>© 2026</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/js/main.js"></script>
+</body>
+</html>
