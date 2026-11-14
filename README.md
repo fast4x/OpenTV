@@ -11,6 +11,10 @@ A native, cross-platform IPTV player for free-to-air channels — Android, Andro
 ![Playlist](https://img.shields.io/badge/playlist-iptv--org-orange)
 ![EPG](https://img.shields.io/badge/EPG-XMLTV-informational)
 
+<img src="./download-card.svg" />
+<br>
+<img src="./chart.svg" />
+
 </div>
 
 **English** · [Italiano](README.it.md)

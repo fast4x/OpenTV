@@ -11,6 +11,10 @@ Player IPTV nativo e multipiattaforma per i canali free-to-air — Android, Andr
 ![Playlist](https://img.shields.io/badge/playlist-iptv--org-orange)
 ![EPG](https://img.shields.io/badge/EPG-XMLTV-informational)
 
+<img src="./download-card.svg" />
+<br>
+<img src="./chart.svg" />
+
 </div>
 
 [English](README.md) · **Italiano**
