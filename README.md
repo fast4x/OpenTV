@@ -4,7 +4,7 @@
 
 **Watch free TV on every screen.**
 
-A native, cross-platform IPTV player for free-to-air channels — Android, Android TV, Windows and Linux.
+A native, cross-platform IPTV player for free-to-air channels — Android, Android TV, Windows, Linux and macOS.
 
 ![Platforms](https://img.shields.io/badge/platform-Android%20%7C%20Android%20TV%20%7C%20Windows%20%7C%20Linux-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)

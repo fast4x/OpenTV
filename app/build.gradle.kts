@@ -4,6 +4,18 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+// ---------------------------------------------------------------------------
+// STEP OT-2 (workflow release): versione iniettabile dalla CI.
+// Il workflow .github/workflows/build-release.yml passa:
+//   ./gradlew :app:assembleRelease -Popentv.versionName=1.2.3-rc.1
+// (tag v1.2.3-rc.1 senza "v" iniziale). Senza property resta "1.0.0"
+// (build locali invariate). versionCode resta FISSO a 1: scelta esplicita
+// (nessun versionCode incrementale iniettato dalla CI; alzare manualmente
+// quando si vuole supportare l'aggiornamento sopra installazioni precedenti).
+// ---------------------------------------------------------------------------
+val opentvVersionName: String =
+    (findProperty("opentv.versionName") as? String)?.takeIf { it.isNotBlank() } ?: "1.0.0"
+
 android {
     namespace = "it.fast4x.opentv"
     compileSdk = 37
@@ -13,8 +25,35 @@ android {
         minSdk = 24
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0.0"
+        versionName = opentvVersionName
         vectorDrawables { useSupportLibrary = true }
+    }
+
+    // ---------------------------------------------------------------------
+    // STEP OT-1 (workflow release): firma release con la chiave CONDIVISA
+    // degli altri progetti, registrata come secret GitHub. Le 4 env vengono
+    // impostate dal workflow build-release.yml (decommentate del base64:
+    // KEYSTORE_BASE64 -> file .jks in RUNNER_TEMP):
+    //   SIGNING_STORE_FILE, SIGNING_STORE_PASSWORD,
+    //   SIGNING_KEY_ALIAS,  SIGNING_KEY_PASSWORD
+    // In locale, senza env, la configurazione resta vuota: nessun errore,
+    // assembleRelease produce semplicemente un APK unsigned.
+    // ---------------------------------------------------------------------
+    signingConfigs {
+        create("release") {
+            val storeFileEnv = System.getenv("SIGNING_STORE_FILE")
+            val storePasswordEnv = System.getenv("SIGNING_STORE_PASSWORD")
+            val keyAliasEnv = System.getenv("SIGNING_KEY_ALIAS")
+            val keyPasswordEnv = System.getenv("SIGNING_KEY_PASSWORD")
+            if (storeFileEnv != null && storePasswordEnv != null &&
+                keyAliasEnv != null && keyPasswordEnv != null
+            ) {
+                storeFile = file(storeFileEnv)
+                storePassword = storePasswordEnv
+                keyAlias = keyAliasEnv
+                keyPassword = keyPasswordEnv
+            }
+        }
     }
 
     buildTypes {
@@ -25,6 +64,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Firma SOLO quando le env di firma sono presenti (CI release);
+            // in locale il buildType resta senza signingConfig (unsigned).
+            if (System.getenv("SIGNING_STORE_FILE") != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
         debug {
             applicationIdSuffix = ".debug"

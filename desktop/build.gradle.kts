@@ -41,9 +41,29 @@ compose.desktop {
         mainClass = "it.fast4x.opentv.desktop.MainKt"
 
         nativeDistributions {
-            targetFormats(TargetFormat.Msi, TargetFormat.Exe, TargetFormat.Deb)
+            // STEP OT-3 (workflow release, scelta "specchia RiPlay"): formati
+            // estesi da Msi/Exe/Deb a TUTTI i formati nativi: jpackage non fa
+            // cross-building, quindi ogni formato esce solo dal runner del suo
+            // sistema (MSI/EXE su windows-latest, DEB/RPM su Linux, DMG solo su
+            // macOS) -> matrix build-desktop nel workflow.
+            targetFormats(TargetFormat.Msi, TargetFormat.Exe, TargetFormat.Deb, TargetFormat.Rpm, TargetFormat.Dmg)
             packageName = "OpenTV"
-            packageVersion = "1.0.0"
+
+            // STEP OT-2 (workflow release): jpackage esige una versione
+            // NUMERICA (MSI vuole major.minor.build, max 3 componenti): il
+            // workflow passa -Popentv.packageVersion=v1.2.3-rc.1 e qui viene
+            // ritagliata la parte numerica (v1.0.0-rc.1 -> "1.0.0", esattamente
+            // come fa il proforma RiPlay con riplayPackageVersionForHost).
+            // Senza property resta "1.0.0" (build locali invariate).
+            val opentvPackageVersion: String =
+                (findProperty("opentv.packageVersion") as? String)
+                    ?.let { Regex("[0-9]+(\\.[0-9]+)*").find(it)?.value }
+                    ?.split(".")
+                    ?.take(3)
+                    ?.joinToString(".")
+                    ?.takeIf { it.isNotBlank() }
+                    ?: "1.0.0"
+            packageVersion = opentvPackageVersion
             vendor = "OpenTV"
 
             // Runtime completo nel pacchetto: evita "module not found" a

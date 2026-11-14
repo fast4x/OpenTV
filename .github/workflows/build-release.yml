@@ -1,0 +1,827 @@
+# =============================================================================
+# build-release.yml - WORKFLOW UNIFICATO di rilascio OpenTV
+#
+# Proforma: build-release.yml di RiPlay (stessa architettura di job:
+# validate -> build-apk -> build-desktop -> release). Adattato al progetto
+# OpenTV (KMP: :app Android telefono+TV, :core condiviso, :desktop Compose):
+#
+#   ANDROID  : UN APK release FIRMATO (OpenTV non ha flavor full/foss, solo i
+#              buildType release/debug). Firma con la STESSA chiave degli
+#              altri progetti via secret GitHub (KEYSTORE_BASE64,
+#              KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD) + signingConfig
+#              letta da env in app/build.gradle.kts (STEP OT-1). Guard
+#              esplicito: mai pubblicare un APK "-unsigned".
+#   DESKTOP  : pacchetti NATIVI Windows MSI + EXE / Linux DEB + RPM /
+#              macOS DMG arm64 + x86_64 (scelta "specchia RiPlay"). jpackage
+#              NON fa cross-building: ogni formato esce solo dal runner del
+#              suo sistema -> matrix build-desktop. Richiede i targetFormats
+#              estesi in desktop/build.gradle.kts (STEP OT-3: Msi, Exe, Deb,
+#              Rpm, Dmg).
+#   VLC      : il job Windows SCARICA VLC win64 in CI e lo semina in
+#              resources/windows/vlc via -Popentv.bundleVlc=true (task
+#              bundleVlc gia' presente nel modulo desktop): MSI/EXE escono
+#              SELF-CONTAINED (nessuna installazione VLC richiesta
+#              all'utente). Su Linux/macOS VLC resta requisito di sistema
+#              (VlcLocator.installHint guida l'utente).
+#   VERSIONE : versionName APK e packageVersion jpackage derivati dal tag
+#              (STEP OT-2: -Popentv.versionName / -Popentv.packageVersion).
+#              jpackage vuole una versione NUMERICA (MSI max 3 componenti):
+#              il suffisso pre-release viene ritagliato
+#              (v1.0.0-rc.1 -> 1.0.0) in desktop/build.gradle.kts.
+#   RELEASE  : una sola GitHub Release con TUTTI gli asset + changelog
+#              (in inglese); i tag con suffisso SemVer 2.0.0
+#              (v1.0.0-rc.1, v1.0.0-beta.1, ...) vengono marcati "pre-release"
+#              e NON diventano "Latest".
+#
+# Trigger:
+#  - push di un tag v*          -> costruisce TUTTO (android + desktop) e
+#                                  pubblica la release sul tag
+#  - workflow_dispatch (manuale): si sceglie la "version" e COSA costruire
+#                                  (all / android-only / desktop-only)
+#
+# NOTE TECNICHE / DIFFERENZE dal proforma RiPlay:
+#  - JDK 17 (temurin) e NON 21: OpenTV compila a JVM 17 uniforme
+#    (jvmToolchain(17) in :core, che viene risolto dal JDK stesso della run;
+#    AGP 9.4.1 richiede JDK >= 17, Gradle wrapper del repo e' 9.8.1).
+#  - NIENTE Python/Chaquopy: la build OpenTV non lo richiede (il setup-python
+#    del proforma e' stato rimosso).
+#  - NIENTE pre-seed CEF/KCEF: OpenTV usa libVLC (vlcj), non un browser
+#    embedded; tutti gli step CEF/appimagetool/zsync del proforma sono stati
+#    rimossi, come gli archivi 7z AVD/WSA/WAYDROID (assenti in OpenTV).
+#  - NIENTE AppImage/zsync: fuori dal perimetro scelto. Aggiungibile dopo
+#    seguendo la ricetta STEP 3ac/3ad/3ag del proforma RiPlay.
+#  - STEP OT-0 (gradlew FALLBACK): i sorgenti allegati non contenevano gli
+#    script gradlew/gradlew.bat (solo gradle-wrapper.jar + properties). Il
+#    workflow li RIGENERA al volo dal jar del wrapper se mancano.
+#    Meglio committare gradlew/gradlew.bat nel repo (standard Gradle).
+#  - RPM su ubuntu-22.04: jpackage --type rpm richiede rpmbuild, che sul
+#    runner non e' preinstallato -> apt-get install rpm (step dedicato).
+#  - ubuntu-22.04 per DEB/RPM: glibc di base piu' vecchio -> i pacchetti
+#    girano anche su distribuzioni non recentissime (come proforma).
+#  - macOS DMG NON FIRMATO: alla prima apertura serve tasto destro -> Apri
+#    (o `xattr -cr /Applications/OpenTV.app`). Per firmare/notarizzare:
+#    segreti MACOS_CERTIFICATE / APPLE_ID ecc. e blocco signing nel
+#    desktop/build.gradle.kts (come STEP 3u del proforma).
+#  - jpackage NON produce AppImage e NON fa cross-building: vedi matrix.
+#  - Il modulo chaquopy/python del proforma non esiste qui: nessun setup.
+#  - Bundle VLC Windows (nuovo, specifico OpenTV): download di
+#    vlc-${VLC_VERSION}-win64.zip da download.videolan.org, estrazione con
+#    7z (preinstallato sui runner Windows), ricerca cartella con libvlc.dll,
+#    OPENTV_VLC_PATH -> bundleVlc -> resources/windows/vlc -> MSI/EXE.
+#    Versione pinnata in env VLC_VERSION (canarini post-estrazione).
+#  - RETRY x3 della build desktop + diagnostica jpackage su fallimento macOS
+#    (stesso rimedio STEP 3u del proforma: codesign/hdiutil transienti).
+# ==============================================================================
+
+name: Build and Release OpenTV
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g., v1.0.0 or v1.0.0-rc.1)'
+        required: true
+        type: string
+      targets:
+        description: 'Cosa costruire'
+        required: true
+        type: choice
+        default: 'all'
+        options:
+          - all
+          - android-only
+          - desktop-only
+
+concurrency:
+  group: build-release-${{ github.ref }}
+  cancel-in-progress: true
+
+# Permessi espliciti per creare la release e caricare gli asset (se il repo
+# limita il token di default a read-only, la creazione della release fallisce
+# con 403 "Resource not accessible by integration" - lezione STEP 3y proforma)
+permissions:
+  contents: write
+
+# Versione VLC win64 seminata nei pacchetti Windows (bundle self-contained).
+# Alzare qui per aggiornare il motore di riproduzione degli installer.
+env:
+  VLC_VERSION: '3.0.24'
+
+jobs:
+  # ===========================================================================
+  # 1) VALIDAZIONE: formato versione + tag non esistente + sync a main
+  #    (identico al proforma RiPlay)
+  # ===========================================================================
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      targets: ${{ steps.targets.outputs.targets }}
+      # true se la versione ha un suffisso pre-release (-rc, -beta...)
+      prerelease: ${{ steps.resolve.outputs.prerelease }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch latest commits
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
+          echo "✅ Synced to latest commit on main"
+
+      - name: Validate version format and check if tag exists
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          # input passato via env, non iniettato nello script (injection-safe)
+          VERSION: ${{ github.event.inputs.version }}
+        run: |
+          # SemVer 2.0.0: tre componenti numeriche obbligatorie + suffisso
+          # pre-release opzionale (v1.0.0-rc.1 | v1.0.0-rc2 | v1.0.0-beta.1)
+          if [[ ! $VERSION =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]]; then
+            echo "❌ Invalid version format! Use v1.0.0 or a pre-release like v1.0.0-rc.1"
+            exit 1
+          fi
+
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "❌ Tag $VERSION already exists!"
+            exit 1
+          fi
+
+          echo "✅ Version $VERSION is valid and new"
+
+      - name: Resolve version output
+        id: resolve
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          CURRENT_TAG="$INPUT_VERSION"
+          if [ -z "$CURRENT_TAG" ]; then
+            CURRENT_TAG="${GITHUB_REF_NAME}"
+          fi
+          echo "version=$CURRENT_TAG" >> "$GITHUB_OUTPUT"
+
+          # pre-release = suffisso SemVer dopo la terza componente numerica.
+          # Vale per ENTRAMBI i trigger (dispatch e push del tag): l'output
+          # marca la GitHub Release come "pre-release" (non diventa Latest).
+          if [[ "$CURRENT_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+- ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            echo "🏷️ $CURRENT_TAG e' una pre-release: la GitHub Release sara' marcata 'pre-release'"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve targets output
+        id: targets
+        env:
+          INPUT_TARGETS: ${{ github.event.inputs.targets }}
+        run: |
+          TARGETS="$INPUT_TARGETS"
+          if [ -z "$TARGETS" ]; then
+            # push di un tag -> si costruisce tutto
+            TARGETS="all"
+          fi
+          echo "targets=$TARGETS" >> "$GITHUB_OUTPUT"
+
+  # ===========================================================================
+  # 2) ANDROID: UN APK release firmato con la chiave condivisa (secret GitHub)
+  #    (nel proforma RiPlay era una matrix full/foss: OpenTV non ha flavor)
+  # ===========================================================================
+  build-apk:
+    needs: validate
+    if: >-
+      github.event_name == 'push' ||
+      needs.validate.outputs.targets == 'all' ||
+      needs.validate.outputs.targets == 'android-only'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch latest commits
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
+
+      # JDK 17: OpenTV compila a JVM 17 uniforme (jvmToolchain(17) in :core
+      # viene risolto con QUESTO JDK); AGP 9.4.1 richiede JDK >= 17
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      # STEP OT-0: i sorgenti allegati non contenevano gradlew/gradlew.bat
+      # (solo gradle-wrapper.jar + properties). Se mancano, li rigenero dal
+      # jar del wrapper (java -cp -> scarica la distro 9.8.1 e lancia il task
+      # `gradle wrapper`). Meglio comunque committare gli script nel repo.
+      - name: STEP OT-0 - Assicura gli script gradlew (fallback dal wrapper jar)
+        shell: bash
+        run: |
+          chmod +x gradlew 2>/dev/null || true
+          if [ ! -x ./gradlew ]; then
+            echo "::warning::gradlew assente nel repo: lo rigenero dal jar del wrapper"
+            if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+              echo "::error::manca anche gradle/wrapper/gradle-wrapper.jar: impossibile procedere"
+              exit 1
+            fi
+            java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain wrapper --gradle-version 9.8.1
+            chmod +x gradlew
+            echo "✅ gradlew/gradlew.bat rigenerati (committarli nel repo per evitare il fallback)"
+          fi
+          ./gradlew --version | head -6
+
+      # STEP OT-1: mostra nel log se le patch di firma/versione sono presenti
+      # nel codice realmente eseguito (un tag su commit vecchio girerebbe su
+      # build file SENZA patch: si vede subito)
+      - name: Controllo patch di firma/versione nel codice di questa run
+        shell: bash
+        run: |
+          echo "=== STEP OT-1 Controllo: patch presenti nel codice eseguito ==="
+          if grep -n "SIGNING_STORE_FILE" app/build.gradle.kts; then
+            echo "OK: signingConfig da env (STEP OT-1) PRESENTE"
+          else
+            echo "!! ATTENZIONE: signingConfig da env ASSENTE — l'APK uscira' NON FIRMATO (tag su commit vecchio?) !!"
+          fi
+          if grep -n "opentv.versionName" app/build.gradle.kts; then
+            echo "OK: iniezione versione APK (STEP OT-2) PRESENTE"
+          else
+            echo "!! ATTENZIONE: iniezione versione ASSENTE — l'APK avra' versionName '1.0.0' fisso !!"
+          fi
+
+      - name: Decode keystore from secrets to temp directory
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          mkdir -p "${RUNNER_TEMP}/keystore"
+          echo "$KEYSTORE_BASE64" | base64 -d > "${RUNNER_TEMP}/keystore/OpenTVKeystore.jks"
+          chmod 600 "${RUNNER_TEMP}/keystore/OpenTVKeystore.jks"
+
+      - name: Build Release APK (firmato con la chiave condivisa)
+        env:
+          CURRENT_TAG: ${{ needs.validate.outputs.version }}
+          SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          SIGNING_STORE_FILE: ${{ runner.temp }}/keystore/OpenTVKeystore.jks
+        run: |
+          # STEP OT-2: versionName dal tag senza "v" (v1.2.3-rc.1 -> 1.2.3-rc.1)
+          VERSION_NO_V="${CURRENT_TAG#v}"
+          echo "versionName APK = ${VERSION_NO_V} (versionCode resta fisso a 1: scelta esplicita)"
+          ./gradlew :app:assembleRelease -Popentv.versionName="${VERSION_NO_V}" \
+            --no-daemon --stacktrace --max-workers=2
+
+      - name: Clean up sensitive files
+        if: always()
+        run: |
+          rm -rf "${RUNNER_TEMP}/keystore"
+          echo "✅ Keystore removed from temporary directory"
+
+      - name: Collect APK + guard anti-unsigned
+        run: |
+          mkdir -p release-apks
+          found=0
+          for f in $(find app/build/outputs/apk -name "*.apk" -path "*release*" -type f); do
+            base=$(basename "$f")
+            if echo "$base" | grep -qi "unsigned"; then
+              echo "::error::APK NON FIRMATO (${base}): le env di firma non sono arrivate a Gradle (secret mancanti o patch STEP OT-1 assente su questo commit)"
+              exit 1
+            fi
+            cp "$f" release-apks/
+            found=1
+          done
+          if [ "$found" -ne 1 ]; then
+            echo "::error::nessun APK release prodotto: albero outputs:"
+            find app/build/outputs -maxdepth 4 || true
+            exit 1
+          fi
+          ls -lah release-apks/
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-release
+          path: release-apks/*.apk
+          if-no-files-found: error
+          retention-days: 1
+
+  # ===========================================================================
+  # 3) DESKTOP: pacchetti NATIVI MSI+EXE / DEB+RPM / DMG dual-arch (matrix
+  #    per-OS: jpackage non fa cross-building) con VLC seminato sui pacchetti
+  #    Windows (bundleVlc) e versione dal tag (STEP OT-2)
+  # ===========================================================================
+  build-desktop:
+    needs: validate
+    if: >-
+      github.event_name == 'push' ||
+      needs.validate.outputs.targets == 'all' ||
+      needs.validate.outputs.targets == 'desktop-only'
+    name: desktop-${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows-msi-exe
+            os: windows-latest
+            tasks: :desktop:packageMsi :desktop:packageExe
+            # STEP VLC: bundle libVLC dentro MSI/EXE (self-contained)
+            vlc_bundle: true
+            extra_flags: '-Popentv.bundleVlc=true'
+          # ubuntu-22.04: glibc base piu' vecchio -> DEB/RPM girano anche su
+          # distribuzioni non recentissime (come proforma RiPlay)
+          - name: linux-deb-rpm
+            os: ubuntu-22.04
+            tasks: :desktop:packageDeb :desktop:packageRpm
+            vlc_bundle: false
+            extra_flags: ''
+          # STEP 3ab proforma: macos-14 RITIRATO da GitHub -> macos-15
+          # (Apple Silicon arm64, 3 vCPU / 7 GB). DMG non firmato.
+          - name: macos-dmg
+            os: macos-15
+            tasks: :desktop:packageDmg
+            vlc_bundle: false
+            expect_arch: arm64
+            # STEP 3u proforma: jpackage --verbose (log dei comandi codesign
+            # interni) + cap Kotlin daemon (runner mac arm = 7GB)
+            extra_flags: '-Pcompose.desktop.verbose=true -Pcompose.preserve.working.dir=true -Pkotlin.daemon.jvmargs=-Xmx2g'
+          # STEP 3ab proforma: build Intel NATIVA (macos-15-intel = runner
+          # x86_64 gratuito sui repo pubblici; niente Rosetta)
+          - name: macos-dmg-x64
+            os: macos-15-intel
+            tasks: :desktop:packageDmg
+            vlc_bundle: false
+            expect_arch: x86_64
+            extra_flags: '-Pcompose.desktop.verbose=true -Pcompose.preserve.working.dir=true -Pkotlin.daemon.jvmargs=-Xmx2g'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch latest commits
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      # STEP OT-0: fallback generazione gradlew (v. job build-apk)
+      - name: STEP OT-0 - Assicura gli script gradlew (fallback dal wrapper jar)
+        shell: bash
+        run: |
+          chmod +x gradlew 2>/dev/null || true
+          if [ ! -x ./gradlew ]; then
+            echo "::warning::gradlew assente nel repo: lo rigenero dal jar del wrapper"
+            if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+              echo "::error::manca anche gradle/wrapper/gradle-wrapper.jar: impossibile procedere"
+              exit 1
+            fi
+            java -cp gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain wrapper --gradle-version 9.8.1
+            chmod +x gradlew
+            echo "✅ gradlew/gradlew.bat rigenerati (committarli nel repo per evitare il fallback)"
+          fi
+          ./gradlew --version | head -6
+
+      # STEP OT-3: mostra nel log se le patch desktop (formati + versione)
+      # sono presenti nel codice realmente eseguito dalla run
+      - name: Controllo patch desktop nel codice di questa run
+        shell: bash
+        run: |
+          echo "=== STEP OT-3 Controllo: patch presenti nel codice eseguito ==="
+          if grep -n "opentv.packageVersion" desktop/build.gradle.kts; then
+            echo "OK: iniezione packageVersion jpackage (STEP OT-2) PRESENTE"
+          else
+            echo "!! ATTENZIONE: iniezione packageVersion ASSENTE — i pacchetti avranno versione '1.0.0' fisso !!"
+          fi
+          if grep -n "TargetFormat.Dmg" desktop/build.gradle.kts; then
+            echo "OK: targetFormats estesi Msi/Exe/Deb/Rpm/Dmg (STEP OT-3) PRESENTI"
+          else
+            echo "!! ATTENZIONE: TargetFormat.Dmg ASSENTE — packageDmg non esisterebbe e il job mac fallirebbe (tag su commit vecchio?) !!"
+          fi
+
+      # STEP VLC (solo Windows): scarica VLC win64 pinnato, estrae con 7z
+      # (preinstallato sul runner), individua la cartella con libvlc.dll e la
+      # espone via OPENTV_VLC_PATH: il task bundleVlc di desktop/build.gradle.kts
+      # la copiera' in resources/windows/vlc -> dentro MSI/EXE.
+      - name: Scarica VLC win64 per il bundle (Windows)
+        if: matrix.vlc_bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          VDIR="${RUNNER_TEMP}/vlc-bundle"
+          rm -rf "$VDIR" && mkdir -p "$VDIR"
+          URL="https://download.videolan.org/pub/videolan/vlc/${VLC_VERSION}/win64/vlc-${VLC_VERSION}-win64.zip"
+          echo "⬇️ Download VLC ${VLC_VERSION} win64"
+          curl -fL --retry 3 --retry-delay 5 -o "${RUNNER_TEMP}/vlc-win64.zip" "$URL"
+          7z x -y -o"${VDIR}" "${RUNNER_TEMP}/vlc-win64.zip" >/dev/null
+          VLC_DIR=$(dirname "$(find "$VDIR" -type f -name 'libvlc.dll' | head -1)")
+          # canarini: la struttura attesa di una cartella VLC win64 completa
+          if [ ! -f "${VLC_DIR}/libvlc.dll" ] || [ ! -f "${VLC_DIR}/libvlccore.dll" ] || [ ! -d "${VLC_DIR}/plugins" ]; then
+            echo "::error::archivio VLC inatteso: mancano libvlc.dll/libvlccore.dll/plugins in ${VLC_DIR}"
+            find "$VDIR" -maxdepth 2 || true
+            exit 1
+          fi
+          echo "✅ VLC bundle pronto: ${VLC_DIR}"
+          du -sh "${VLC_DIR}" || true
+          echo "OPENTV_VLC_PATH=${VLC_DIR}" >> "$GITHUB_ENV"
+
+      # jpackage --type rpm richiede rpmbuild (pacchetto apt "rpm"): sul
+      # runner ubuntu-22.04 NON e' preinstallato (il deb invece usa dpkg-deb,
+      # gia' presente). Guard con command -v: idempotente e veloce se gia' c'e'.
+      - name: Installa rpmbuild per jpackage RPM (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          if ! command -v rpmbuild >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq rpm
+          fi
+          rpmbuild --version
+
+      # STEP 3u proforma: i runner macOS a volte lasciano volumi DMG montati
+      # da run precedenti; se /Volumes/OpenTV* esiste gia' il packaging DMG
+      # fallisce con "hdiutil: create failed - File exists". Pulizia preventiva.
+      - name: Pulizia volumi hdiutil stale (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          for v in /Volumes/OpenTV*; do
+            if [ -e "$v" ]; then
+              echo "Detaching stale volume: $v"
+              hdiutil detach "$v" -force || true
+            fi
+          done
+          ls -1 /Volumes || true
+
+      # STEP 3u proforma: retry x3 (codesign/hdiutil di jpackage sui runner CI
+      # hanno guasti transitori documentati). Versione dal tag via
+      # -Popentv.packageVersion (STEP OT-2).
+      - name: Build pacchetto desktop (${{ matrix.name }})
+        shell: bash
+        env:
+          CURRENT_TAG: ${{ needs.validate.outputs.version }}
+        run: |
+          set -u
+          attempt=1
+          max_attempts=3
+          while [ "$attempt" -le "$max_attempts" ]; do
+            echo "::group::Tentativo ${attempt}/${max_attempts} - ./gradlew ${{ matrix.tasks }} ${{ matrix.extra_flags }} -Popentv.packageVersion=${CURRENT_TAG}"
+            if ./gradlew ${{ matrix.tasks }} ${{ matrix.extra_flags }} -Popentv.packageVersion="${CURRENT_TAG}" --no-daemon --stacktrace; then
+              echo "::endgroup::"
+              echo "✅ Build riuscita al tentativo ${attempt}"
+              exit 0
+            fi
+            echo "::endgroup::"
+            attempt=$((attempt + 1))
+            if [ "$attempt" -le "$max_attempts" ]; then
+              echo "⚠️ Tentativo fallito, riprovo tra 15 secondi..."
+              sleep 15
+            fi
+          done
+          echo "❌ Build fallita dopo ${max_attempts} tentativi"
+          exit 1
+
+      # STEP 3ab proforma: verifica che il binario dell'app (e il runtime
+      # bundlato) sia dell'arch attesa della matrix (arm64 su macos-15,
+      # x86_64 su macos-15-intel): se il runner sbaglia arch la build muore
+      # qui con log chiaro.
+      - name: Controllo architettura app image (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECT="${{ matrix.expect_arch }}"
+          APP_DIR=$(find desktop/build/compose/binaries -maxdepth 5 -name 'OpenTV.app' -type d 2>/dev/null | head -1)
+          if [ -z "$APP_DIR" ]; then
+            echo "❌ OpenTV.app non trovata in binaries:"
+            find desktop/build/compose/binaries -maxdepth 5 || true
+            exit 1
+          fi
+          BIN="$APP_DIR/Contents/MacOS/OpenTV"
+          archs=$(lipo -archs "$BIN")
+          echo "🔎 $BIN -> [$archs]"
+          case "$archs" in
+            *"$EXPECT"*) echo "✅ architettura attesa ($EXPECT) presente" ;;
+            *) echo "❌ architettura attesa ($EXPECT) ASSENTE in [$archs]"; exit 1 ;;
+          esac
+          JLI="$APP_DIR/Contents/runtime/lib/libjli.dylib"
+          if [ -e "$JLI" ]; then
+            jarch=$(lipo -archs "$JLI")
+            echo "🔎 runtime bundlato: $JLI -> [$jarch]"
+            case "$jarch" in
+              *"$EXPECT"*) echo "✅ runtime jpackage dell'arch attesa ($EXPECT)" ;;
+              *) echo "⚠️ runtime jpackage [$jarch] diverso dall'attesa ($EXPECT) (non bloccante)" ;;
+            esac
+          else
+            echo "⚠️ libjli.dylib non trovata in $APP_DIR/Contents/runtime/lib (skip check runtime)"
+          fi
+
+      # STEP 3u proforma: se macOS fallisce non andiamo al buio -> argomenti
+      # esatti di jpackage e Info.plist generati, allegati come artifact
+      - name: Diagnostica jpackage (solo su fallimento macOS)
+        if: failure() && runner.os == 'macOS'
+        shell: bash
+        run: |
+          D=desktop/build/compose/tmp
+          {
+            echo "=== argomenti jpackage (*.args.txt) ==="
+            find "$D" -maxdepth 2 -name '*.args.txt' -type f 2>/dev/null | while read -r p; do
+              echo "--- $p ---"
+              cat "$p"
+              echo ""
+            done
+            echo "=== Info.plist generati ==="
+            find "$D" -maxdepth 3 -name '*.plist' -type f 2>/dev/null | while read -r p; do
+              echo "--- $p ---"
+              cat "$p"
+              echo ""
+            done
+            echo "=== build/compose/tmp (livello 1) ==="
+            ls -la "$D" 2>/dev/null || true
+            echo "=== binaries ==="
+            find desktop/build/compose/binaries -maxdepth 4 2>/dev/null | head -40 || true
+          } > jpackage-diagnostics.txt 2>&1 || true
+          cat jpackage-diagnostics.txt
+
+      - name: Upload diagnostica jpackage (macOS)
+        if: failure() && runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-jpackage-diagnostics-${{ matrix.name }}
+          path: jpackage-diagnostics.txt
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # Lezione STEP 3y proforma: staging PIATTO (una sola directory = root
+      # dell'artifact, niente LCA/annidamenti) + assert per-OS sull'estensione
+      # attesa, cosi' il job release trova tutto alla radice dell'artifact.
+      - name: Raccogli pacchetti prodotti (staging piatto)
+        shell: bash
+        run: |
+          set -u
+          mkdir -p desktop-packages
+          find desktop/build/compose/binaries -type f \( -name '*.msi' -o -name '*.exe' -o -name '*.deb' -o -name '*.rpm' -o -name '*.dmg' \) -print -exec cp {} desktop-packages/ \;
+          echo "📦 Pacchetti raccolti in desktop-packages/:"
+          ls -lah desktop-packages/
+          n=$(ls -1 desktop-packages | wc -l)
+          if [ "$n" -eq 0 ]; then
+            echo "❌ jpackage non ha prodotto nessun pacchetto: albero binaries:"
+            find desktop/build/compose/binaries -maxdepth 4 || true
+            exit 1
+          fi
+          # Assert per-OS: ogni runner DEVE produrre le sue estensioni
+          case "${RUNNER_OS}" in
+            Windows) exts="msi exe" ;;
+            Linux)   exts="deb rpm" ;;
+            macOS)   exts="dmg" ;;
+            *)       exts="" ;;
+          esac
+          for ext in $exts; do
+            if ls desktop-packages/*."$ext" >/dev/null 2>&1; then
+              echo "✅ *.${ext} presente (runner ${RUNNER_OS})"
+            else
+              echo "❌ MANCA *.${ext} atteso sul runner ${RUNNER_OS}"
+              exit 1
+            fi
+          done
+
+      # Root piatta garantita: un solo search path = niente LCA/annidamenti
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          if-no-files-found: error
+          path: desktop-packages/*
+          retention-days: 1
+
+  # ===========================================================================
+  # 4) RELEASE: raccoglie TUTTI gli artifact (android + desktop), rinomina con
+  #    nomi canonici, verifica gli asset attesi e pubblica UNA release con
+  #    changelog in inglese (pre-release marcata per tag con suffisso SemVer)
+  # ===========================================================================
+  release:
+    needs: [validate, build-apk, build-desktop]
+    # Va avanti anche se uno dei due gruppi e' stato SALTATO (dispatch
+    # android-only/desktop-only), ma non se qualcuno e' fallito/cancellato
+    if: >-
+      always() &&
+      needs.validate.result == 'success' &&
+      needs.build-apk.result != 'failure' &&
+      needs.build-apk.result != 'cancelled' &&
+      needs.build-desktop.result != 'failure' &&
+      needs.build-desktop.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Ogni artifact finisce in una SUA sottocartella (niente merge: evita di
+      # mischiare l'APK con i pacchetti di sistemi diversi)
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Normalize asset names
+        env:
+          CURRENT_TAG: ${{ needs.validate.outputs.version }}
+        run: |
+          cd release-assets
+          echo "📂 Artifacts scaricati:"
+          find . -type f | sort
+
+          # Nomi canonici per la release (se un artifact contiene piu' file
+          # con la stessa estensione, vengono numerati -1, -2, ...)
+          rename_artifact() { # $1=artifact_dir $2=extension $3=base canonico
+            local files n i=1 f
+            files=$(ls "$1"/*."$2" 2>/dev/null || true)
+            [ -z "$files" ] && return 0
+            n=$(echo "$files" | wc -l)
+            for f in $files; do
+              if [ "$n" -eq 1 ]; then
+                cp "$f" "${3}.${2}"
+              else
+                cp "$f" "${3}-${i}.${2}"
+              fi
+              i=$((i+1))
+            done
+          }
+          rename_artifact apk-release     apk "OpenTV-${CURRENT_TAG}-Android"
+          rename_artifact windows-msi-exe msi "OpenTV-${CURRENT_TAG}-Windows"
+          rename_artifact windows-msi-exe exe "OpenTV-${CURRENT_TAG}-Windows"
+          rename_artifact linux-deb-rpm   deb "OpenTV-${CURRENT_TAG}-Linux"
+          rename_artifact linux-deb-rpm   rpm "OpenTV-${CURRENT_TAG}-Linux"
+          rename_artifact macos-dmg       dmg "OpenTV-${CURRENT_TAG}-macOS-arm64"
+          rename_artifact macos-dmg-x64   dmg "OpenTV-${CURRENT_TAG}-macOS-x86_64"
+
+          echo "📂 Dopo rinomina:"
+          find . -maxdepth 1 -type f | sort
+
+      # Lezione STEP 3y proforma: verifica GLI ASSET ATTESI prima di creare
+      # la release (un asset mancante NON passa piu' inosservato: il job muore
+      # con un ::error:: che dice COSA manca, consapevole dei targets scelti)
+      - name: Verifica asset attesi prima della release
+        env:
+          CURRENT_TAG: ${{ needs.validate.outputs.version }}
+          TARGETS: ${{ needs.validate.outputs.targets }}
+        run: |
+          cd release-assets
+          echo "=== Inventario artifact scaricati (2 livelli) ==="
+          find . -mindepth 1 -maxdepth 2 | sort
+          missing=0
+          check() { # $1=pattern glob $2=descrizione
+            if ls -1 $1 >/dev/null 2>&1; then
+              echo "✅ $2: $(ls -1 $1 | tr '\n' ' ')"
+            else
+              echo "❌ $2: MANCANTE (pattern: $1)"
+              missing=$((missing+1))
+            fi
+          }
+          case "$TARGETS" in
+            android-only)
+              check "OpenTV-${CURRENT_TAG}-Android*.apk" "APK Android firmato"
+              ;;
+            desktop-only)
+              check "OpenTV-${CURRENT_TAG}-Windows*.msi"       "MSI Windows"
+              check "OpenTV-${CURRENT_TAG}-Windows*.exe"       "EXE Windows"
+              check "OpenTV-${CURRENT_TAG}-Linux*.deb"         "DEB Linux"
+              check "OpenTV-${CURRENT_TAG}-Linux*.rpm"         "RPM Linux"
+              check "OpenTV-${CURRENT_TAG}-macOS-arm64*.dmg"   "DMG macOS Apple Silicon"
+              check "OpenTV-${CURRENT_TAG}-macOS-x86_64*.dmg"  "DMG macOS Intel"
+              ;;
+            *) # all (push tag o dispatch 'all')
+              check "OpenTV-${CURRENT_TAG}-Android*.apk"       "APK Android firmato"
+              check "OpenTV-${CURRENT_TAG}-Windows*.msi"       "MSI Windows"
+              check "OpenTV-${CURRENT_TAG}-Windows*.exe"       "EXE Windows"
+              check "OpenTV-${CURRENT_TAG}-Linux*.deb"         "DEB Linux"
+              check "OpenTV-${CURRENT_TAG}-Linux*.rpm"         "RPM Linux"
+              check "OpenTV-${CURRENT_TAG}-macOS-arm64*.dmg"   "DMG macOS Apple Silicon"
+              check "OpenTV-${CURRENT_TAG}-macOS-x86_64*.dmg"  "DMG macOS Intel"
+              ;;
+          esac
+          echo "Asset attesi mancanti: ${missing}"
+          if [ "$missing" -gt 0 ]; then
+            echo "::error::asset attesi mancanti in release-assets — la release NON verra' creata incompleta. Vedi l'inventario sopra."
+            exit 1
+          fi
+
+      - name: Generate Changelog
+        env:
+          CURRENT_TAG: ${{ needs.validate.outputs.version }}
+        run: |
+          PREVIOUS_TAG=$(git tag --sort=-version:refname --list "v*" --merged HEAD | grep -v "^${CURRENT_TAG}$" | head -1)
+
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "⚠️  No previous tag found - showing all commits"
+            # GITHUB_REPOSITORY e' una env di default; || true evita fallimento
+            # se grep filtra tutte le righe (lezione del proforma)
+            git log --pretty=format:"- %s ([%h](https://github.com/${GITHUB_REPOSITORY}/commit/%H))" --reverse \
+              | grep -v "Update stats and chart \[skip ci\]" | head -20 > /tmp/changelog.txt || true
+          else
+            echo "📋 Changes between $PREVIOUS_TAG and $CURRENT_TAG"
+            git log "${PREVIOUS_TAG}..HEAD" --pretty=format:"- %s ([%h](https://github.com/${GITHUB_REPOSITORY}/commit/%H))" \
+              | grep -v "Update stats and chart \[skip ci\]" > /tmp/changelog.txt || true
+          fi
+
+          echo "" >> /tmp/changelog.txt
+
+      - name: Create Release Notes
+        env:
+          CURRENT_TAG: ${{ needs.validate.outputs.version }}
+          IS_PRERELEASE: ${{ needs.validate.outputs.prerelease }}
+        run: |
+          RELEASE_DATE=$(date +'%Y-%m-%d')
+          COMMIT_HASH=$(git rev-parse --short HEAD)
+
+          {
+            echo "## 📺 OpenTV ${CURRENT_TAG} - Released ${RELEASE_DATE}"
+            echo ""
+            # avviso ben visibile sulle pre-release
+            if [ "$IS_PRERELEASE" = "true" ]; then
+              echo "> ⚠️ **RELEASE CANDIDATE**: test version intended for testers. It may contain bugs and does NOT replace the latest stable release."
+              echo ""
+            fi
+            echo "### 📋 What's Changed"
+            # Il changelog viene letto da file: bash non interpreta
+            # virgolette, backtick o parentesi nei messaggi di commit
+            cat /tmp/changelog.txt
+            echo ""
+            echo "### 📦 Downloads"
+            echo "**Android** (phone + Android TV, single universal APK)"
+            echo "- **APK** (signed) — \`OpenTV-${CURRENT_TAG}-Android.apk\`"
+            echo ""
+            echo "**Native Desktop**"
+            echo "- **Windows** - MSI + EXE installer (**libVLC engine bundled**: no separate VLC installation needed)"
+            echo "- **Linux** - DEB + RPM (requires VLC on the system: \`sudo apt install vlc\` / \`sudo dnf install vlc\`)"
+            echo "- **macOS Apple Silicon** - DMG (unsigned: first run right-click -> Open; requires VLC in /Applications)"
+            echo "- **macOS Intel** - DMG (unsigned: first run right-click -> Open; requires VLC in /Applications)"
+            echo ""
+            echo "### ✨ Build Information"
+            echo "- **Build Date**: ${RELEASE_DATE}"
+            echo "- **Git Commit**: \`${COMMIT_HASH}\`"
+            echo "- **Java Version**: 17"
+            echo "- **VLC bundled on Windows**: ${VLC_VERSION}"
+            echo ""
+            echo "**Thank you for using OpenTV!** 📺"
+          } > /tmp/release_notes.md
+
+      # Lezione STEP 3y proforma: elenco DINAMICO e concreto dei file da
+      # allegare (solo file realmente presenti) + fail_on_unmatched_files
+      # -> impossibile creare una release con asset mancanti in silenzio.
+      # action-gh-release v3 (non v1, non manutenuta): overwrite_files rende
+      # i re-run sullo stesso tag idempotenti.
+      - name: Prepara elenco file per la release
+        run: |
+          LIST=$(find release-assets -maxdepth 1 -type f | sort)
+          echo "📂 File che verranno allegati alla release:"
+          echo "$LIST"
+          {
+            echo "RELEASE_FILES<<RFILES_EOF"
+            echo "$LIST"
+            echo "RFILES_EOF"
+          } >> "$GITHUB_ENV"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: ${{ env.RELEASE_FILES }}
+          fail_on_unmatched_files: true
+          overwrite_files: true
+          body_path: /tmp/release_notes.md
+          draft: false
+          # una release candidate viene marcata "pre-release" su GitHub ->
+          # NON compare come "Latest" (l'endpoint /releases/latest continua a
+          # risolvere verso l'ultima STABILE)
+          prerelease: ${{ needs.validate.outputs.prerelease == 'true' }}
+          tag_name: ${{ needs.validate.outputs.version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Summary
+        if: success()
+        run: |
+          echo "✅ Release completed successfully!"
+          echo "📦 Release files:"
+          find release-assets -maxdepth 1 -type f -exec du -h {} \; | sort -k2
