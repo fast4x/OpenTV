@@ -90,7 +90,7 @@
     'nav.download': 'Download',
     'hero.badge': 'v1.0.0 — new release · Nov 14, 2026',
     'hero.title': 'Free TV, on <span class="grad">every screen</span>.',
-    'hero.sub': "OpenTV is a native, open-source IPTV player for free-to-air channels. Open the app, pick your country and you're watching \u2014 TV guide, favorites and reminders included. Zero setup.",
+    'hero.sub': "OpenTV is a native, open-source IPTV player for free-to-air channels managed by iptv-org project. Open the app, pick your country and you're watching \u2014 TV guide, favorites and reminders included. Zero setup.",
     'hero.cta.dl': 'Download v1.0.0',
     'hero.cta.gh': 'On GitHub',
     'stats.1': 'supported platforms',
