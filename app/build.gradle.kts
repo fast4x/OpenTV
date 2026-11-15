@@ -91,6 +91,11 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    dependenciesInfo {
+        // Rimuove il blocco "Dependency metadata" dal APK Signing Block
+        includeInApk = false
+        includeInBundle = false
+    }
 }
 
 dependencies {
