@@ -13,8 +13,8 @@ kotlin {
 
     jvm()
 
-    // JVM 17 uniforme su tutti i target, come l'app Android.
-    jvmToolchain(17)
+    // JVM 21 uniforme su tutti i target, come l'app Android.
+    jvmToolchain(21)
 
     sourceSets {
         commonMain.dependencies {
@@ -44,7 +44,7 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 }

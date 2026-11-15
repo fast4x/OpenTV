@@ -12,10 +12,10 @@ plugins {
 // diagnosi sorgenti) e usa libVLC (via vlcj) come motore di riproduzione.
 kotlin {
     jvm("desktop") {
-        // JVM 17 uniforme con :core e :app: il default KMP sarebbe 1.8 e
-        // andrebbe in conflitto con :core, che compila a 17.
+        // JVM 21 uniforme con :core e :app: il default KMP sarebbe 1.8 e
+        // andrebbe in conflitto con :core, che compila a 21.
         compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
         }
     }
 
