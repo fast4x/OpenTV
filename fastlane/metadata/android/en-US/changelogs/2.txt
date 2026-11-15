@@ -1,0 +1,2 @@
+Log completed at
+https://github.com/fast4x/OpenTV/releases/tag/v1.0.1
