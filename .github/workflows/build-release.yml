@@ -38,39 +38,6 @@
 #                                  pubblica la release sul tag
 #  - workflow_dispatch (manuale): si sceglie la "version" e COSA costruire
 #                                  (all / android-only / desktop-only)
-#
-# NOTE TECNICHE / DIFFERENZE dal proforma RiPlay:
-#  - JDK 17 (temurin) e NON 21: OpenTV compila a JVM 17 uniforme
-#    (jvmToolchain(17) in :core, che viene risolto dal JDK stesso della run;
-#    AGP 9.4.1 richiede JDK >= 17, Gradle wrapper del repo e' 9.8.1).
-#  - NIENTE Python/Chaquopy: la build OpenTV non lo richiede (il setup-python
-#    del proforma e' stato rimosso).
-#  - NIENTE pre-seed CEF/KCEF: OpenTV usa libVLC (vlcj), non un browser
-#    embedded; tutti gli step CEF/appimagetool/zsync del proforma sono stati
-#    rimossi, come gli archivi 7z AVD/WSA/WAYDROID (assenti in OpenTV).
-#  - NIENTE AppImage/zsync: fuori dal perimetro scelto. Aggiungibile dopo
-#    seguendo la ricetta STEP 3ac/3ad/3ag del proforma RiPlay.
-#  - STEP OT-0 (gradlew FALLBACK): i sorgenti allegati non contenevano gli
-#    script gradlew/gradlew.bat (solo gradle-wrapper.jar + properties). Il
-#    workflow li RIGENERA al volo dal jar del wrapper se mancano.
-#    Meglio committare gradlew/gradlew.bat nel repo (standard Gradle).
-#  - RPM su ubuntu-22.04: jpackage --type rpm richiede rpmbuild, che sul
-#    runner non e' preinstallato -> apt-get install rpm (step dedicato).
-#  - ubuntu-22.04 per DEB/RPM: glibc di base piu' vecchio -> i pacchetti
-#    girano anche su distribuzioni non recentissime (come proforma).
-#  - macOS DMG NON FIRMATO: alla prima apertura serve tasto destro -> Apri
-#    (o `xattr -cr /Applications/OpenTV.app`). Per firmare/notarizzare:
-#    segreti MACOS_CERTIFICATE / APPLE_ID ecc. e blocco signing nel
-#    desktop/build.gradle.kts (come STEP 3u del proforma).
-#  - jpackage NON produce AppImage e NON fa cross-building: vedi matrix.
-#  - Il modulo chaquopy/python del proforma non esiste qui: nessun setup.
-#  - Bundle VLC Windows (nuovo, specifico OpenTV): download di
-#    vlc-${VLC_VERSION}-win64.zip da download.videolan.org, estrazione con
-#    7z (preinstallato sui runner Windows), ricerca cartella con libvlc.dll,
-#    OPENTV_VLC_PATH -> bundleVlc -> resources/windows/vlc -> MSI/EXE.
-#    Versione pinnata in env VLC_VERSION (canarini post-estrazione).
-#  - RETRY x3 della build desktop + diagnostica jpackage su fallimento macOS
-#    (stesso rimedio STEP 3u del proforma: codesign/hdiutil transienti).
 # ==============================================================================
 
 name: Build and Release OpenTV
@@ -212,12 +179,10 @@ jobs:
           git fetch origin main
           git reset --hard origin/main
 
-      # JDK 17: OpenTV compila a JVM 17 uniforme (jvmToolchain(17) in :core
-      # viene risolto con QUESTO JDK); AGP 9.4.1 richiede JDK >= 17
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
           cache: gradle
 
@@ -376,10 +341,10 @@ jobs:
           git fetch origin main
           git reset --hard origin/main
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
           cache: gradle
 
@@ -780,7 +745,7 @@ jobs:
             echo "### ✨ Build Information"
             echo "- **Build Date**: ${RELEASE_DATE}"
             echo "- **Git Commit**: \`${COMMIT_HASH}\`"
-            echo "- **Java Version**: 17"
+            echo "- **Java Version**:21"
             echo "- **VLC bundled on Windows**: ${VLC_VERSION}"
             echo ""
             echo "**Thank you for using OpenTV!** 📺"
