@@ -1,0 +1,1 @@
+A native, cross-platform IPTV player for free-to-air channels managed by iptv-org project

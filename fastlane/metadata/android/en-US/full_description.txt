@@ -1,0 +1,26 @@
+**Watch free TV on every screen.**
+
+A native, cross-platform IPTV player for free-to-air channels — Android, Android TV, Windows, Linux and macOS.
+
+## What is OpenTV?
+
+OpenTV is a native cross-platform app for watching free-to-air TV channels via IPTV, with a special focus on **Italian channels**. On startup it fetches the public playlist for your country from the [iptv-org](https://iptv-org.github.io/) project, shows it in a sleek **"Dark TV"** interface and plays the available streams.
+
+One app for every device: **phones and tablets**, **Android TV / TV boxes**, Windows and Linux. The same UI adapts focus, sizes and controls to the detected device (D-pad vs touch).
+
+> ⚠️ **Legal note**: OpenTV is a *generic player*. It does not provide, host or select any content: streams come from public third-party playlists. Only use it with channels you may legally watch in your country (e.g. free-to-air channels).
+
+## Highlights
+
+- **Zero setup** — your country's channels are ready at first launch.
+- **TV guide included** — now/next, full schedule and a grid guide, all automatic.
+- **Made for the living room** — D-pad navigation, TV banner, remote-friendly player.
+- **Never miss a show** — program reminders, favorites and history for every source.
+- **Keeps playing** — offline fallback, automatic reconnection, 6-hour playlist cache.
+
+Visit it on Github
+https://github.com/fast4x/OpenTV
+
+<div align="center">
+  <i>Made with ❤️ by Fast4x</i>
+</div>
