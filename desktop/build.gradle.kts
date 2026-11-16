@@ -10,6 +10,11 @@ plugins {
 // App desktop OpenTV (Windows/Linux/macOS) basata su Compose Multiplatform.
 // Riutilizza tutta la logica del modulo :core (playlist, preferiti, EPG,
 // diagnosi sorgenti) e usa libVLC (via vlcj) come motore di riproduzione.
+//
+// STEP OT-4: gli installer nativi (MSI/EXE, DEB/RPM, DMG) e i collegamenti
+// creati durante l'installazione usano l'icona OpenTV (desktop/icons/, vedi
+// i blocchi windows/linux/macOS in nativeDistributions); la finestra a
+// runtime usa la stessa identita' (Main.kt, opentv-icon.png nelle risorse).
 kotlin {
     jvm("desktop") {
         // JVM 21 uniforme con :core e :app: il default KMP sarebbe 1.8 e
@@ -75,11 +80,52 @@ compose.desktop {
             // opzionalmente l'installazione VLC locale in windows/vlc.
             appResourcesRootDir.set(project.layout.projectDirectory.dir("resources"))
 
+            // STEP OT-4 (icone nei collegamenti/installer): jpackage usa
+            // l'icona di piattaforma SOLO se passata esplicitamente (DSL:
+            // iconFile); senza, installer e collegamenti creati durante
+            // l'installazione montano l'icona GENERICA di Java (JavaApp.ico /
+            // JavaApp.png / JavaApp.icns del runtime). jpackage valida
+            // l'estensione per piattaforma (WinAppImageBuilder/LinuxAppImageBuilder/
+            // MacAppImageBuilder del JDK: solo .ico / .png / .icns, altrimenti
+            // l'opzione viene ignorata e si torna al default Java):
+            //   Windows .ico -> risorsa dell'EXE (ExecutableRebrander) E icona
+            //                   dell'installer MSI (variabile JpIcon di WiX):
+            //                   e' QUELLA che finisce sui collegamenti desktop
+            //                   e menu Start creati con shortcut = true;
+            //   Linux   .png -> integrato dal DEB/RPM (file .desktop con Icon=
+            //                   + xdg-desktop-menu/xdg-icon-resource), attivo
+            //                   solo se linux.shortcut = true (vedi sotto);
+            //   macOS   .icns -> bundle OpenTV.app del DMG (Dock/Finder/Cmd-Tab).
+            // Gli asset in desktop/icons/ ricostruiscono l'identita' del
+            // launcher Android (tile blu gradiente + play) a tutte le
+            // risoluzioni: ICO multi-size 16..256 (il collegamento sul desktop
+            // sceglie la risorsa piu' vicina alle DPI della scrivania),
+            // PNG 512x512 (standard hicolor Linux), ICNS con le entry
+            // standard ic07..ic14 (128/256/512/1024 + varianti @2x).
+
             windows {
                 menu = true
+                // Collegamenti desktop + menu Start: l'icona del collegamento
+                // e' quella dell'EXE/MSI (iconFile qui sotto).
                 shortcut = true
                 dirChooser = true
                 perUserInstall = true
+                iconFile.set(project.file("icons/OpenTV.ico"))
+            }
+
+            // STEP OT-4: su Linux il file .desktop con l'icona viene creato
+            // da jpackage SOLO se e' richiesto un shortcut (DesktopIntegration
+            // di jpackage: "withDesktopFile = associations || SHORTCUT_HINT"):
+            // senza questo flag il DEB/RPM non lascia NESSUNA voce nel menu
+            // ne' sul desktop, quindi anche l'icona non compare mai.
+            linux {
+                shortcut = true
+                iconFile.set(project.file("icons/OpenTV.png"))
+            }
+
+            // Icona del bundle OpenTV.app nel DMG.
+            macOS {
+                iconFile.set(project.file("icons/OpenTV.icns"))
             }
         }
     }

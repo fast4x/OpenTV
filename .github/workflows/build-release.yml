@@ -17,6 +17,12 @@
 #              suo sistema -> matrix build-desktop. Richiede i targetFormats
 #              estesi in desktop/build.gradle.kts (STEP OT-3: Msi, Exe, Deb,
 #              Rpm, Dmg).
+#   ICONA    : STEP OT-4 - gli installer e i collegamenti creati durante
+#              l'installazione usano l'icona OpenTV (iconFile per-OS in
+#              desktop/build.gradle.kts, asset in desktop/icons/: .ico
+#              multi-size Windows, .png 512 Linux, .icns macOS). Il job
+#              build-desktop verifica gli asset PRIMA della build e che
+#              jpackage abbia ricevuto --icon DOPO la build.
 #   VLC      : il job Windows SCARICA VLC win64 in CI e lo semina in
 #              resources/windows/vlc via -Popentv.bundleVlc=true (task
 #              bundleVlc gia' presente nel modulo desktop): MSI/EXE escono
@@ -382,6 +388,26 @@ jobs:
             echo "!! ATTENZIONE: TargetFormat.Dmg ASSENTE — packageDmg non esisterebbe e il job mac fallirebbe (tag su commit vecchio?) !!"
           fi
 
+          # STEP OT-4: gli asset icona devono essere nel repo e collegati a
+          # jpackage (iconFile per-OS): senza, collegamenti desktop e menu
+          # nascono con l'icona generica di Java (errore bloccante: e' la
+          # regressione esatta che lo STEP OT-4 previene).
+          echo "=== STEP OT-4 Controllo: icone installer presenti e collegate ==="
+          for icon in desktop/icons/OpenTV.ico desktop/icons/OpenTV.png desktop/icons/OpenTV.icns; do
+            if [ -f "$icon" ]; then
+              echo "OK: asset icona presente ($icon)"
+            else
+              echo "::error::asset icona ASSENTE ($icon): jpackage cadrebbe sull'icona generica di Java nei collegamenti (tag su commit vecchio?)"
+              exit 1
+            fi
+          done
+          if grep -n "iconFile.set" desktop/build.gradle.kts; then
+            echo "OK: iconFile per-OS (STEP OT-4) PRESENTI"
+          else
+            echo "::error::iconFile ASSENTE in desktop/build.gradle.kts — i collegamenti/installer userebbero l'icona generica di Java"
+            exit 1
+          fi
+
       # STEP VLC (solo Windows): scarica VLC win64 pinnato, estrae con 7z
       # (preinstallato sul runner), individua la cartella con libvlc.dll e la
       # espone via OPENTV_VLC_PATH: il task bundleVlc di desktop/build.gradle.kts
@@ -464,6 +490,28 @@ jobs:
           echo "❌ Build fallita dopo ${max_attempts} tentativi"
           exit 1
 
+      # STEP OT-4: prova concreta che jpackage abbia ricevuto --icon (gli
+      # argomenti generati dal plugin compose finiscono in *.args.txt sotto
+      # desktop/build/compose/tmp): se l'icona non arrivasse a jpackage i
+      # collegamenti resterebbero con l'icona generica di Java SENZA che la
+      # build fallisca. Il check gira su TUTTI i runner della matrix.
+      - name: STEP OT-4 - Verifica icona passata a jpackage
+        shell: bash
+        run: |
+          set -u
+          found=0
+          for args_file in $(find desktop/build/compose/tmp -name '*.args.txt' -type f 2>/dev/null); do
+            if grep -q -- "--icon" "$args_file"; then
+              echo "OK: --icon presente in ${args_file}"
+              found=1
+            fi
+          done
+          if [ "$found" -ne 1 ]; then
+            echo "::error::jpackage eseguito senza --icon: l'icona OpenTV non finira' nei collegamenti/installer"
+            find desktop/build/compose/tmp -maxdepth 2 || true
+            exit 1
+          fi
+
       # STEP 3ab proforma: verifica che il binario dell'app (e il runtime
       # bundlato) sia dell'arch attesa della matrix (arm64 su macos-15,
       # x86_64 su macos-15-intel): se il runner sbaglia arch la build muore
@@ -497,6 +545,16 @@ jobs:
             esac
           else
             echo "⚠️ libjli.dylib non trovata in $APP_DIR/Contents/runtime/lib (skip check runtime)"
+          fi
+
+          # STEP OT-4: l'icona deve essere dentro il bundle .app (Dock,
+          # Finder, Cmd-Tab): senza iconFile il DMG monta JavaApp.icns.
+          RES_DIR="$APP_DIR/Contents/Resources"
+          if [ -d "$RES_DIR" ] && ls "$RES_DIR"/*.icns >/dev/null 2>&1; then
+            echo "✅ icona .icns nel bundle: $(ls "$RES_DIR"/*.icns)"
+          else
+            echo "❌ nessuna icona .icns in $RES_DIR: il DMG avrebbe l'icona generica di Java"
+            exit 1
           fi
 
       # STEP 3u proforma: se macOS fallisce non andiamo al buio -> argomenti
@@ -534,6 +592,34 @@ jobs:
           path: jpackage-diagnostics.txt
           if-no-files-found: ignore
           retention-days: 7
+
+      # STEP OT-4 (Linux): il DEB deve contenere il file .desktop (creato da
+      # jpackage SOLO con linux.shortcut = true) e l'icona PNG dell'app: sono
+      # i file che xdg-desktop-menu/xdg-icon-resource registrano nel menu e
+      # sul desktop durante l'installazione. Check anche sull'RPM se rpm e'
+      # disponibile (installato prima della build per jpackage).
+      - name: STEP OT-4 - Verifica icona e shortcut nei pacchetti (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEB=$(find desktop/build/compose/binaries -name '*.deb' -type f | head -1)
+          if [ -z "$DEB" ]; then
+            echo "::error::nessun DEB prodotto"
+            exit 1
+          fi
+          dpkg-deb -c "$DEB" > /tmp/deb-list.txt
+          echo "🔎 DEB ${DEB}:"
+          grep -E '\.desktop' /tmp/deb-list.txt || { echo "::error::.desktop assente nel DEB (linux.shortcut non attiva?)"; exit 1; }
+          grep -E '\.png' /tmp/deb-list.txt || { echo "::error::icona PNG assente nel DEB"; exit 1; }
+          echo "✅ .desktop + icona PNG presenti nel DEB"
+          RPM=$(find desktop/build/compose/binaries -name '*.rpm' -type f | head -1)
+          if [ -n "$RPM" ] && command -v rpm >/dev/null 2>&1; then
+            rpm -qlp "$RPM" > /tmp/rpm-list.txt
+            grep -E '\.desktop' /tmp/rpm-list.txt || { echo "::error::.desktop assente nell'RPM"; exit 1; }
+            grep -E '\.png' /tmp/rpm-list.txt || { echo "::error::icona PNG assente nell'RPM"; exit 1; }
+            echo "✅ .desktop + icona PNG presenti nell'RPM"
+          fi
 
       # Lezione STEP 3y proforma: staging PIATTO (una sola directory = root
       # dell'artifact, niente LCA/annidamenti) + assert per-OS sull'estensione
@@ -741,6 +827,7 @@ jobs:
             echo "- **Linux** - DEB + RPM (requires VLC on the system: \`sudo apt install vlc\` / \`sudo dnf install vlc\`)"
             echo "- **macOS Apple Silicon** - DMG (unsigned: first run right-click -> Open; requires VLC in /Applications)"
             echo "- **macOS Intel** - DMG (unsigned: first run right-click -> Open; requires VLC in /Applications)"
+            echo "- **App icon** - the OpenTV icon is embedded in Windows desktop/Start-menu shortcuts, Linux menu and desktop entries, and the macOS app bundle"
             echo ""
             echo "### ✨ Build Information"
             echo "- **Build Date**: ${RELEASE_DATE}"

@@ -14,7 +14,31 @@ import it.fast4x.opentv.data.repository.La7CatchupRepository
 import it.fast4x.opentv.data.repository.PlaylistRepository
 import it.fast4x.opentv.data.store.UserPrefsStore
 import java.awt.GraphicsEnvironment
+import java.awt.Image
 import java.io.File
+
+/**
+ * Ancora per il classpath dell'app desktop (risorse incluse nel pacchetto,
+ * stesso meccanismo di FlagIcons per le bandierine).
+ */
+private object DesktopResources
+
+/**
+ * STEP OT-4: icona della finestra desktop, derivata dal launcher Android
+ * (tile blu + play) e inclusa nelle risorse del modulo desktop
+ * (desktop/src/desktopMain/resources/opentv-icon.png, 512x512). Serve per la
+ * taskbar e Alt-Tab su Windows/Linux: senza, la finestra mostra l'icona
+ * generica della JVM anche quando i collegamenti creati dagli installer
+ * (iconFile in desktop/build.gradle.kts) hanno quella giusta. Su macOS
+ * l'icona visibile resta quella del bundle .app del DMG: setIconImage non
+ * cambia il Dock.
+ */
+private fun loadWindowIconImage(): Image? =
+    runCatching {
+        DesktopResources::class.java.classLoader
+            .getResourceAsStream("opentv-icon.png")
+            ?.use { stream -> javax.imageio.ImageIO.read(stream) }
+    }.getOrNull()
 
 /**
  * Dipendenze condivise del desktop: stesse classi del core usate dall'app
@@ -130,6 +154,12 @@ fun main() {
                 // pannelli CMP, Canvas skiko): idempotente, viene rieseguito a
                 // ogni recovery (vedi SwingBlackout).
                 runCatching { SwingBlackout.apply(window) }
+                // STEP OT-4: icona della finestra/taskbar coerente con quella
+                // dei collegamenti degli installer. Guardia runCatching: l'app
+                // parte comunque anche se la risorsa non fosse leggibile.
+                runCatching {
+                    loadWindowIconImage()?.let { window.setIconImage(it) }
+                }
                 onDispose { }
             }
 
