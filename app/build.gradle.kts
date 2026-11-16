@@ -14,7 +14,7 @@ plugins {
 // quando si vuole supportare l'aggiornamento sopra installazioni precedenti).
 // ---------------------------------------------------------------------------
 val opentvVersionName: String =
-    (findProperty("opentv.versionName") as? String)?.takeIf { it.isNotBlank() } ?: "1.0.1"
+    (findProperty("opentv.versionName") as? String)?.takeIf { it.isNotBlank() } ?: "1.0.2"
 
 android {
     namespace = "it.fast4x.opentv"
@@ -24,7 +24,7 @@ android {
         applicationId = "it.fast4x.opentv"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
+        versionCode = 3
         versionName = opentvVersionName
         vectorDrawables { useSupportLibrary = true }
     }

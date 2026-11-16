@@ -67,7 +67,7 @@ compose.desktop {
                     ?.take(3)
                     ?.joinToString(".")
                     ?.takeIf { it.isNotBlank() }
-                    ?: "1.0.1"
+                    ?: "1.0.2"
             packageVersion = opentvPackageVersion
             vendor = "OpenTV"
 
