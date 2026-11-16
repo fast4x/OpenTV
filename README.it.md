@@ -252,9 +252,9 @@ riproduzione attiva).
 
 ## Screenshot
 
-| Home (telefono) | Home (Android TV) | Player |
-|---|---|---|
-| _aggiungi screenshot_ | _aggiungi screenshot_ | _aggiungi screenshot_ |
+| Home (telefono) | Home (Android TV / Desktop) | Player |
+|---|-----------------------------|---|
+| <img src="./docs/assets/phone.jpeg" width="30%" /> | <img src="./docs/assets/bigscreen.png" width="30%" /> | <img src="./docs/assets/player.png" width="30%" /> |
 
 ## Configurazione
 

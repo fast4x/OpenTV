@@ -132,9 +132,9 @@ Player bars **fade out after 4 seconds of inactivity in every mode** (windowed a
 
 ## Screenshots
 
-| Home (phone) | Home (Android TV) | Player |
-|---|---|---|
-| _add screenshot_ | _add screenshot_ | _add screenshot_ |
+| Home (phone)                                       | Home (Android TV / Desktop)                           | Player                                             |
+|----------------------------------------------------|-------------------------------------------------------|----------------------------------------------------|
+| <img src="./docs/assets/phone.jpeg" width="30%" /> | <img src="./docs/assets/bigscreen.png" width="30%" /> | <img src="./docs/assets/player.png" width="30%" /> |
 
 ## Configuration
 
