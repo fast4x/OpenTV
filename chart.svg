@@ -9,16 +9,16 @@
     </linearGradient>
   </defs>
   <rect width="600" height="150" rx="12" fill="#ffffff" filter="url(#shadow2)" stroke="#e1e4e8" stroke-width="1"/>
-  <text x="20" y="24" fill="#2b3137" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="14" font-weight="600">📈 Download Growth (Actual: 114)</text>
+  <text x="20" y="24" fill="#2b3137" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="14" font-weight="600">📈 Download Growth (Actual: 117)</text>
 
   <!-- Area sotto la linea (fix proforma: i punti di ancoraggio al bordo
        inferiore usano solo la x del primo/ultimo punto; l'ancoraggio del
        proforma generava una terna x,y,120 e l'area disegnava un
        artefatto triangolare come nel chart RiPlay) -->
-  <polygon fill="url(#fillGrad)" points="30.0,120 30.0,120.0 84.0,120.0 138.0,112.1 192.0,104.2 246.0,93.2 300.0,82.1 354.0,71.8 408.0,63.9 462.0,63.2 516.0,46.6 570.0,30.0 570.0,120" />
+  <polygon fill="url(#fillGrad)" points="30.0,120 30.0,120.0 79.1,120.0 128.2,112.3 177.3,104.6 226.4,93.8 275.5,83.1 324.5,73.1 373.6,65.4 422.7,64.6 471.8,48.5 520.9,32.3 570.0,30.0 570.0,120" />
 
   <!-- Linea principale -->
-  <polyline fill="none" stroke="#0366d6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="30.0,120.0 84.0,120.0 138.0,112.1 192.0,104.2 246.0,93.2 300.0,82.1 354.0,71.8 408.0,63.9 462.0,63.2 516.0,46.6 570.0,30.0" />
+  <polyline fill="none" stroke="#0366d6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="30.0,120.0 79.1,120.0 128.2,112.3 177.3,104.6 226.4,93.8 275.5,83.1 324.5,73.1 373.6,65.4 422.7,64.6 471.8,48.5 520.9,32.3 570.0,30.0" />
 
   <!-- Punto finale luminoso -->
   <circle cx="570.0" cy="30.0" r="4" fill="#ffffff" stroke="#0366d6" stroke-width="2.5" />
