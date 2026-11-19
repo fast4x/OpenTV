@@ -9,16 +9,16 @@
     </linearGradient>
   </defs>
   <rect width="600" height="150" rx="12" fill="#ffffff" filter="url(#shadow2)" stroke="#e1e4e8" stroke-width="1"/>
-  <text x="20" y="24" fill="#2b3137" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="14" font-weight="600">📈 Download Growth (Actual: 141)</text>
+  <text x="20" y="24" fill="#2b3137" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="14" font-weight="600">📈 Download Growth (Actual: 149)</text>
 
   <!-- Area sotto la linea (fix proforma: i punti di ancoraggio al bordo
        inferiore usano solo la x del primo/ultimo punto; l'ancoraggio del
        proforma generava una terna x,y,120 e l'area disegnava un
        artefatto triangolare come nel chart RiPlay) -->
-  <polygon fill="url(#fillGrad)" points="30.0,120 30.0,120.0 66.0,120.0 102.0,113.6 138.0,107.2 174.0,98.3 210.0,89.4 246.0,81.1 282.0,74.7 318.0,74.0 354.0,60.6 390.0,47.2 426.0,45.3 462.0,37.7 498.0,35.7 534.0,33.8 570.0,30.0 570.0,120" />
+  <polygon fill="url(#fillGrad)" points="30.0,120 30.0,120.0 63.8,120.0 97.5,114.0 131.2,107.9 165.0,99.5 198.8,91.0 232.5,83.2 266.2,77.1 300.0,76.5 333.8,63.8 367.5,51.1 401.2,49.3 435.0,42.1 468.8,40.3 502.5,38.5 536.2,34.8 570.0,30.0 570.0,120" />
 
   <!-- Linea principale -->
-  <polyline fill="none" stroke="#0366d6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="30.0,120.0 66.0,120.0 102.0,113.6 138.0,107.2 174.0,98.3 210.0,89.4 246.0,81.1 282.0,74.7 318.0,74.0 354.0,60.6 390.0,47.2 426.0,45.3 462.0,37.7 498.0,35.7 534.0,33.8 570.0,30.0" />
+  <polyline fill="none" stroke="#0366d6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="30.0,120.0 63.8,120.0 97.5,114.0 131.2,107.9 165.0,99.5 198.8,91.0 232.5,83.2 266.2,77.1 300.0,76.5 333.8,63.8 367.5,51.1 401.2,49.3 435.0,42.1 468.8,40.3 502.5,38.5 536.2,34.8 570.0,30.0" />
 
   <!-- Punto finale luminoso -->
   <circle cx="570.0" cy="30.0" r="4" fill="#ffffff" stroke="#0366d6" stroke-width="2.5" />
