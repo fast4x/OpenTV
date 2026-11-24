@@ -9,16 +9,16 @@
     </linearGradient>
   </defs>
   <rect width="600" height="150" rx="12" fill="#ffffff" filter="url(#shadow2)" stroke="#e1e4e8" stroke-width="1"/>
-  <text x="20" y="24" fill="#2b3137" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="14" font-weight="600">📈 Download Growth (Actual: 184)</text>
+  <text x="20" y="24" fill="#2b3137" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" font-size="14" font-weight="600">📈 Download Growth (Actual: 185)</text>
 
   <!-- Area sotto la linea (fix proforma: i punti di ancoraggio al bordo
        inferiore usano solo la x del primo/ultimo punto; l'ancoraggio del
        proforma generava una terna x,y,120 e l'area disegnava un
        artefatto triangolare come nel chart RiPlay) -->
-  <polygon fill="url(#fillGrad)" points="30.0,120 30.0,120.0 50.8,120.0 71.5,115.1 92.3,110.2 113.1,103.4 133.8,96.5 154.6,90.2 175.4,85.3 196.2,84.8 216.9,74.5 237.7,64.2 258.5,62.8 279.2,56.9 300.0,55.4 320.8,54.0 341.5,51.0 362.3,47.1 383.1,45.2 403.8,42.2 424.6,40.3 445.4,38.8 466.2,36.4 486.9,33.4 507.7,32.9 528.5,32.4 549.2,31.0 570.0,30.0 570.0,120" />
+  <polygon fill="url(#fillGrad)" points="30.0,120 30.0,120.0 50.0,120.0 70.0,115.1 90.0,110.3 110.0,103.5 130.0,96.6 150.0,90.3 170.0,85.5 190.0,85.0 210.0,74.8 230.0,64.5 250.0,63.1 270.0,57.2 290.0,55.8 310.0,54.3 330.0,51.4 350.0,47.5 370.0,45.6 390.0,42.6 410.0,40.7 430.0,39.2 450.0,36.8 470.0,33.9 490.0,33.4 510.0,32.9 530.0,31.5 550.0,30.5 570.0,30.0 570.0,120" />
 
   <!-- Linea principale -->
-  <polyline fill="none" stroke="#0366d6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="30.0,120.0 50.8,120.0 71.5,115.1 92.3,110.2 113.1,103.4 133.8,96.5 154.6,90.2 175.4,85.3 196.2,84.8 216.9,74.5 237.7,64.2 258.5,62.8 279.2,56.9 300.0,55.4 320.8,54.0 341.5,51.0 362.3,47.1 383.1,45.2 403.8,42.2 424.6,40.3 445.4,38.8 466.2,36.4 486.9,33.4 507.7,32.9 528.5,32.4 549.2,31.0 570.0,30.0" />
+  <polyline fill="none" stroke="#0366d6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="30.0,120.0 50.0,120.0 70.0,115.1 90.0,110.3 110.0,103.5 130.0,96.6 150.0,90.3 170.0,85.5 190.0,85.0 210.0,74.8 230.0,64.5 250.0,63.1 270.0,57.2 290.0,55.8 310.0,54.3 330.0,51.4 350.0,47.5 370.0,45.6 390.0,42.6 410.0,40.7 430.0,39.2 450.0,36.8 470.0,33.9 490.0,33.4 510.0,32.9 530.0,31.5 550.0,30.5 570.0,30.0" />
 
   <!-- Punto finale luminoso -->
   <circle cx="570.0" cy="30.0" r="4" fill="#ffffff" stroke="#0366d6" stroke-width="2.5" />
